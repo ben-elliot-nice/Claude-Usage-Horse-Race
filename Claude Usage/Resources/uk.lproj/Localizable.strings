@@ -745,3 +745,214 @@
 "wizard.migrate_description_short" = "Імпортувати дані старих профілів з попередньої версії програми";
 "wizard.skip_migration" = "Пропустити";
 "wizard.migration_skipped" = "Пропущено";
+
+/* ==================== */
+/* MARK: - Debug Tools */
+/* ==================== */
+"debug.title" = "Інструменти розробника";
+"debug.subtitle" = "Журналювання мережевих запитів для усунення несправностей та діагностики";
+"debug.basic_information" = "Основна інформація";
+"debug.captured_requests" = "Захоплені запити";
+"debug.clear_all_logs" = "Очистити всі журнали?";
+"debug.clear_logs" = "Очистити журнали";
+"debug.clear_logs_message" = "Це назавжди видалить всі записані мережеві запити.";
+"debug.duration" = "Тривалість";
+"debug.duration_seconds" = "%.3f секунд";
+"debug.error" = "Помилка";
+"debug.full_size" = "Повний розмір: %@";
+"debug.logging_active" = "Журналювання активне";
+"debug.logging_duration" = "Тривалість журналювання";
+"debug.logging_inactive" = "Журналювання неактивне";
+"debug.method" = "Метод";
+"debug.network_logger" = "Журнал мережевих запитів";
+"debug.network_logger_desc" = "Фіксувати всі API запити з детальною інформацією";
+"debug.no_requests" = "Запити ще не записано";
+"debug.request_body" = "Тіло запиту";
+"debug.request_details" = "Деталі запиту";
+"debug.requests_logged" = "%d запитів записано";
+"debug.response_preview" = "Відповідь (перегляд)";
+"debug.start_logging" = "Почати журналювання";
+"debug.status_code" = "Код статусу";
+"debug.stop_logging" = "Зупинити журналювання";
+"debug.stops_in" = "Зупиниться через %@";
+"debug.timestamp" = "Мітка часу";
+"debug.url" = "URL";
+
+/* ==================== */
+/* MARK: - Feedback Form */
+/* ==================== */
+"feedback.title" = "Допоможіть нам покращитися";
+"feedback.subtitle" = "Ваш відгук формує майбутнє цієї програми";
+"feedback.title_label" = "Роль";
+"feedback.name_placeholder" = "Ім'я";
+"feedback.contact_placeholder" = "Email";
+"feedback.message_placeholder" = "Розкажіть нам будь-що — відгуки, ідеї, побажання...";
+"feedback.role_developer" = "Розробник";
+"feedback.role_designer" = "Дизайнер";
+"feedback.role_manager" = "Менеджер";
+"feedback.role_researcher" = "Дослідник";
+"feedback.role_student" = "Студент";
+"feedback.role_other" = "Інше";
+"feedback.submit" = "Надіслати";
+"feedback.submitting" = "Надсилання...";
+"feedback.thanks" = "Дякуємо за відгук!";
+"feedback.never_show" = "Більше не питати";
+"feedback.remind_later" = "Нагадати пізніше";
+"feedback.error_title" = "Помилка відправлення";
+"feedback.error_message" = "Не вдалося надіслати ваш відгук. Будь ласка, спробуйте пізніше.";
+
+/* ==================== */
+/* MARK: - Usage History */
+/* ==================== */
+"history.title" = "Історія використання";
+"history.subtitle" = "Відстежуйте використання з часом";
+"history.tab.session" = "Сесії";
+"history.tab.weekly" = "Тижневе";
+"history.tab.billing" = "Білінг";
+"history.chart.session_title" = "Історія використання сесій";
+"history.chart.weekly_title" = "Тенденція тижневого використання";
+"history.chart.billing_title" = "Місячні витрати API";
+"history.chart.usage_overview" = "Огляд використання";
+"history.chart.session_usage" = "Використання сесії";
+"history.chart.weekly_usage" = "Тижневе використання";
+"history.chart.api_billing" = "Білінг API";
+"history.chart.no_data" = "Немає даних у вибраному діапазоні";
+"history.chart.now" = "Зараз";
+"history.time_scale.5_hours" = "5 годин";
+"history.time_scale.24_hours" = "24 години";
+"history.time_scale.7_days" = "7 днів";
+"history.time_scale.30_days" = "30 днів";
+"history.empty.session_title" = "Немає історії сесій";
+"history.empty.session_description" = "Використання сесій буде записано після кожного скидання (5 годин)";
+"history.empty.weekly_title" = "Немає тижневої історії";
+"history.empty.weekly_description" = "Тижневе використання буде записано після кожного скидання у понеділок";
+"history.empty.billing_title" = "Немає історії білінгу";
+"history.empty.billing_description" = "Дані білінгу будуть записані після кожного місячного скидання";
+"history.reset_type.session" = "Скидання сесії";
+"history.reset_type.weekly" = "Тижневе скидання";
+"history.reset_type.billing" = "Розрахунковий цикл";
+"history.label.session" = "Сесія";
+"history.label.total" = "Всього";
+"history.label.spent" = "Витрачено";
+"history.list.title" = "Записи історії";
+"history.list.count" = "%d записів";
+"history.list.empty" = "Записів ще немає. Історія буде записана автоматично при кожному скиданні.";
+"history.list.more" = "+%d більше записів";
+"history.export_button" = "Експорт";
+"history.export.title" = "Експортувати дані";
+"history.export.csv" = "Експортувати як CSV";
+"history.export.json" = "Експортувати як JSON";
+"history.clear_button" = "Очистити";
+"history.no_profile" = "Немає активного профілю";
+
+/* ==================== */
+/* MARK: - Mobile App */
+/* ==================== */
+"mobile.title" = "Мобільний додаток";
+"mobile.subtitle" = "Відстежуйте використання Claude де завгодно";
+"mobile.coming_soon_badge" = "НЕЗАБАРОМ";
+"mobile.cta_message" = "Зацікавлені? Повідомте нас, і ми сповістимо вас, коли буде готово.";
+"mobile.notify_me" = "Сповістити мене";
+"mobile.notified" = "Ви в списку!";
+"mobile.notified_desc" = "Ми повідомимо вас, коли мобільний додаток буде доступний.";
+"mobile.submitting" = "Надсилання...";
+"mobile.privacy_note" = "Особисті дані не збираються. Це лише реєструє вашу зацікавленість.";
+"mobile.error_title" = "Запит не вдався";
+"mobile.error_message" = "Не вдалося зареєструвати вашу зацікавленість. Будь ласка, перевірте підключення до інтернету та спробуйте ще раз.";
+
+/* ==================== */
+/* MARK: - Notifications (Additional) */
+/* ==================== */
+"notifications.sound" = "Звук";
+"notifications.sound.default" = "Стандартний";
+"notifications.sound.none" = "Без звуку";
+"notifications.sound.preview" = "Прослухати звук";
+"notifications.custom_thresholds" = "Власні порогові значення";
+"notifications.custom_threshold" = "Власне попередження";
+"notifications.custom_placeholder" = "напр. 50";
+"notifications.custom_add" = "Додати";
+
+/* ==================== */
+/* MARK: - Popover Settings */
+/* ==================== */
+"popover.title" = "Спливаюче вікно";
+"popover.subtitle" = "Налаштуйте відображення інформації про використання у спливаючому вікні";
+"popover.display_section" = "Відображення";
+"popover.time_display" = "Відображення часу скидання";
+"popover.time_display_desc" = "Виберіть, що показувати для часу скидання у спливаючому вікні";
+"popover.time_display_remaining" = "Залишок";
+"popover.time_display_reset" = "Час скидання";
+"popover.time_display_both" = "Обидва";
+"popover.time_format" = "Формат часу";
+"popover.time_format_desc" = "Виберіть, як відображати час у програмі";
+"popover.time_format_12h" = "12-годинний";
+"popover.time_format_24h" = "24-годинний";
+"popover.time_format_system" = "Системний";
+"popover.overage_balance" = "Баланс";
+"popover.banner.credentials_expired" = "Облікові дані застаріли. Оновіть у Налаштуваннях.";
+"popover.banner.refresh_failed" = "Оновлення не вдалося %d разів";
+"popover.banner.updated_ago" = "Оновлено %dхв тому";
+
+/* ==================== */
+/* MARK: - Settings Sections (Additional) */
+/* ==================== */
+"section.history_title" = "Історія";
+"section.history_desc" = "Перегляд історії використання";
+"section.popover_title" = "Спливаюче вікно";
+"section.popover_desc" = "Налаштувати відображення спливаючого вікна";
+"section.shortcuts_title" = "Ярлики";
+"section.shortcuts_desc" = "Налаштування клавіатурних скорочень";
+"section.debug_title" = "Інструменти розробника";
+"section.debug_desc" = "Журналювання мережі та діагностика";
+"section.mobile_app_title" = "Мобільний додаток";
+"section.mobile_app_desc" = "Мобільний додаток незабаром";
+"section.support_title" = "Підтримка";
+"section.support_desc" = "Підтримайте розробку проекту";
+"section.app_settings_title" = "Налаштування";
+"section.app_settings_desc" = "Налаштування програми та запуск";
+
+/* ==================== */
+/* MARK: - Setup CLI Detection */
+/* ==================== */
+"setup.cli_detecting" = "Перевірка облікових даних CLI...";
+"setup.cli_detected.title" = "CLI виявлено!";
+"setup.cli_detected.description" = "На вашій системі знайдено облікові дані Claude Code CLI. Почніть відстеження використання одним кліком.";
+"setup.cli_detected.start" = "Почати відстеження";
+"setup.cli_detected.manual" = "Налаштувати вручну";
+
+/* ==================== */
+/* MARK: - Keyboard Shortcuts */
+/* ==================== */
+"shortcuts.title" = "Клавіатурні скорочення";
+"shortcuts.subtitle" = "Встановіть глобальні гарячі клавіші для поширених дій";
+"shortcuts.info_title" = "Глобальні скорочення";
+"shortcuts.info_desc" = "Скорочення працюють з будь-якої програми. Кожне скорочення повинне містити принаймні один модифікатор (Command, Option, Control або Shift). Уникайте конфліктів із системними скороченнями.";
+"shortcuts.open_popover" = "Перемкнути спливаюче вікно";
+"shortcuts.open_popover_desc" = "Показати або приховати спливаюче вікно використання";
+"shortcuts.open_settings" = "Відкрити налаштування";
+"shortcuts.open_settings_desc" = "Відкрити вікно налаштувань";
+"shortcuts.refresh" = "Оновити використання";
+"shortcuts.refresh_desc" = "Отримати актуальні дані використання";
+"shortcuts.next_profile" = "Наступний профіль";
+"shortcuts.next_profile_desc" = "Перемкнути на наступний профіль";
+"shortcuts.record" = "Клацніть для запису";
+"shortcuts.recording" = "Натисніть скорочення...";
+"shortcuts.clear" = "Очистити";
+"shortcuts.none" = "Немає";
+
+/* ==================== */
+/* MARK: - Project Support */
+/* ==================== */
+"support.title" = "Підтримати проект";
+"support.subtitle" = "Claude Usage Tracker — безкоштовний та відкритий код";
+"support.message" = "Якщо ця програма вам корисна, розгляньте можливість підтримати її розробку";
+"support.buy_coffee" = "Пригостити кавою";
+"support.star_github" = "Додати зірку на GitHub";
+"support.also_support" = "Ви також можете підтримати, зробивши";
+"support.footer" = "Ваша підтримка допомагає зберегти та розвивати цей проект";
+"support.all_features_free" = "Всі функції безкоштовні";
+"support.all_features_desc" = "Кожна функція цієї програми абсолютно безкоштовна. Жодних преміум-рівнів, жодних платних функцій, жодних підписок.";
+"support.open_source" = "Відкритий код";
+"support.open_source_desc" = "Вихідний код публічно доступний на GitHub. Ви можете переглядати, змінювати та робити внески до проекту.";
+"support.no_tracking" = "Без відстеження";
+"support.no_tracking_desc" = "Ваша конфіденційність важлива. Жодної аналітики, телеметрії, збору даних. Все залишається на вашому Mac.";
