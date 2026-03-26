@@ -156,6 +156,7 @@
 				pt,
 				ja,
 				ko,
+				ua,
 				"zh-ch",
 				"zh-CH",
 			);
