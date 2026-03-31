@@ -143,6 +143,8 @@ enum Constants {
     enum WindowSizes {
         static let settingsWindow = NSSize(width: 720, height: 750)
         static let popoverSize = NSSize(width: 320, height: 600)
+        /// Height of the system NSPopover arrow (macOS standard ~13pt)
+        static let popoverArrowHeight: CGFloat = 13
     }
 
     // GitHub Repository Info

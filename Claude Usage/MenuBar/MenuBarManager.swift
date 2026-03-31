@@ -469,7 +469,10 @@ class MenuBarManager: NSObject, ObservableObject {
             }
         )
 
-        return NSHostingController(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView)
+        hostingController.preferredContentSize = Constants.WindowSizes.popoverSize
+        hostingController.sizingOptions = .preferredContentSize
+        return hostingController
     }
 
     @objc private func togglePopover(_ sender: Any?) {
