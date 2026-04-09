@@ -346,6 +346,10 @@
 "claudecode.component_pace_marker" = "Marcador de ritmo";
 "claudecode.pace_marker_info" = "Muestra una marca de color en la posición del tiempo transcurrido";
 "claudecode.component_resettime" = "Tiempo de reinicio";
+"claudecode.component_weekly" = "Mostrar uso semanal";
+"claudecode.component_weekly_description" = "Uso semanal de tokens con barra y tiempo de reinicio";
+"claudecode.component_extra_usage" = "Mostrar uso extra";
+"claudecode.component_extra_usage_description" = "Indicador de costo (ej., 9.49 USD)";
 "claudecode.requirement_sessionkey" = "• Clave de sesión configurada en Credenciales → pestaña Claude.ai";
 "claudecode.requirement_restart" = "• Reiniciar Claude CLI después de aplicar cambios";
 "claudecode.error_no_components" = "Seleccione al menos un componente para mostrar";

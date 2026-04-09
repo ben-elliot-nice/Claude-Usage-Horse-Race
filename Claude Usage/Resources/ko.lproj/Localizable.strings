@@ -497,6 +497,10 @@
 "claudecode.component_pace_marker" = "페이스 마커";
 "claudecode.pace_marker_info" = "경과 시간 위치에 색상 표시를 보여줍니다";
 "claudecode.component_resettime" = "리셋 시간";
+"claudecode.component_weekly" = "주간 사용량 표시";
+"claudecode.component_weekly_description" = "막대 및 초기화 시간이 포함된 주간 토큰 사용량";
+"claudecode.component_extra_usage" = "추가 사용량 표시";
+"claudecode.component_extra_usage_description" = "비용 표시 (예: 9.49 USD)";
 "claudecode.requirement_sessionkey" = "• 자격 증명 → Claude.ai 탭에서 세션 키 구성됨";
 "claudecode.requirement_restart" = "• 변경사항 적용 후 Claude CLI 재시작";
 "claudecode.error_no_components" = "표시할 구성요소를 하나 이상 선택하세요";

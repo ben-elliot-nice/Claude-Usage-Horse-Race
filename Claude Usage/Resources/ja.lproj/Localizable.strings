@@ -361,6 +361,10 @@
 "claudecode.component_pace_marker" = "ペースマーカー";
 "claudecode.pace_marker_info" = "経過時間位置にカラーマークを表示";
 "claudecode.component_resettime" = "リセット時刻";
+"claudecode.component_weekly" = "週間使用量を表示";
+"claudecode.component_weekly_description" = "バーとリセット時間付きの週間トークン使用量";
+"claudecode.component_extra_usage" = "追加使用量を表示";
+"claudecode.component_extra_usage_description" = "コスト表示（例: 9.49 USD）";
 "claudecode.requirement_sessionkey" = "• 認証情報 → Claude.aiタブでセッションキーが構成されている";
 "claudecode.requirement_restart" = "• 変更適用後にClaude CLIを再起動";
 "claudecode.error_no_components" = "表示する少なくとも1つのコンポーネントを選択してください";

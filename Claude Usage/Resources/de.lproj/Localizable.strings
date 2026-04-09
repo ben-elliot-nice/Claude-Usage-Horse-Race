@@ -347,6 +347,10 @@
 "claudecode.component_pace_marker" = "Tempo-Markierung";
 "claudecode.pace_marker_info" = "Zeigt einen farbigen Strich an der verstrichenen Zeitposition";
 "claudecode.component_resettime" = "Zurücksetzungszeit";
+"claudecode.component_weekly" = "Wöchentliche Nutzung anzeigen";
+"claudecode.component_weekly_description" = "Wöchentliche Token-Nutzung mit Balken und Rücksetzzeit";
+"claudecode.component_extra_usage" = "Zusätzliche Nutzung anzeigen";
+"claudecode.component_extra_usage_description" = "Kostenanzeige (z.B. 9,49 USD)";
 "claudecode.requirement_sessionkey" = "• Sitzungsschlüssel im Tab 'Anmeldedaten → Claude.ai' konfiguriert";
 "claudecode.requirement_restart" = "• Claude CLI nach Anwendung der Änderungen neu starten";
 "claudecode.error_no_components" = "Bitte wählen Sie mindestens eine Komponente zur Anzeige";

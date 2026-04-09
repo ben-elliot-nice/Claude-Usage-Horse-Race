@@ -368,6 +368,10 @@
 "claudecode.component_pace_marker" = "Pace marker";
 "claudecode.pace_marker_info" = "Colored by projected usage pace (green → purple)";
 "claudecode.component_resettime" = "Reset time";
+"claudecode.component_weekly" = "Show Weekly Usage";
+"claudecode.component_weekly_description" = "Weekly token usage with bar and reset time";
+"claudecode.component_extra_usage" = "Show Extra Usage";
+"claudecode.component_extra_usage_description" = "Cost indicator (e.g., 9.49 USD)";
 "claudecode.requirement_sessionkey" = "• Session key configured in Credentials → Claude.ai tab";
 "claudecode.requirement_restart" = "• Restart Claude CLI after applying changes";
 "claudecode.error_no_components" = "Please select at least one component to display";

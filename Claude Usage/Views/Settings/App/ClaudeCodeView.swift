@@ -258,14 +258,14 @@ struct ClaudeCodeView: View {
                                     Divider()
 
                                     SettingToggle(
-                                        title: "Show Weekly Usage",
-                                        description: "Weekly token usage with bar and reset time",
+                                        title: "claudecode.component_weekly".localized,
+                                        description: "claudecode.component_weekly_description".localized,
                                         isOn: $showWeekly
                                     )
 
                                     SettingToggle(
-                                        title: "Show Extra Usage",
-                                        description: "Cost indicator (e.g., 9.49 USD)",
+                                        title: "claudecode.component_extra_usage".localized,
+                                        description: "claudecode.component_extra_usage_description".localized,
                                         isOn: $showExtraUsage
                                     )
                                 }
