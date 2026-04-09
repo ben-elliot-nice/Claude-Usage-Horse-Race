@@ -198,7 +198,6 @@ struct PopoverContentView: View {
             }
 
         }
-        .padding(.top, Constants.WindowSizes.popoverArrowHeight)
         .padding(.bottom, 8)
         .frame(width: 280)
         .background(VisualEffectBackground())
