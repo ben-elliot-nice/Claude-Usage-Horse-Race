@@ -535,6 +535,8 @@
 "multiprofile.show_label_description" = "Simgenin altında profil adını göster";
 "multiprofile.use_system_color" = "Tek Renk";
 "multiprofile.use_system_color_description" = "Durum renkleri (yeşil/turuncu/kırmızı) yerine beyaz renk kullan";
+"multiprofile.active_indicator_title" = "Aktif Profil Göstergesini Göster";
+"multiprofile.active_indicator_description" = "Şu anda aktif olan profilin simgesinin altında küçük bir yeşil alt çizgi gösterir";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

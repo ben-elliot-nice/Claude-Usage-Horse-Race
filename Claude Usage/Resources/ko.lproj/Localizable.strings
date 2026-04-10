@@ -138,6 +138,8 @@
 "multiprofile.show_label_description" = "아이콘 아래에 프로필 이름 표시";
 "multiprofile.use_system_color" = "시스템 색상 사용";
 "multiprofile.use_system_color_description" = "상태 색상 대신 Mac의 강조 색상 사용";
+"multiprofile.active_indicator_title" = "활성 프로파일 표시기 보이기";
+"multiprofile.active_indicator_description" = "현재 활성 프로파일 아이콘 아래에 작은 초록색 밑줄 표시";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

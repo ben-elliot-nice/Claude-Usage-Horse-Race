@@ -535,6 +535,8 @@
 "multiprofile.show_label_description" = "Відображати назву профілю під іконкою";
 "multiprofile.use_system_color" = "Монохромний";
 "multiprofile.use_system_color_description" = "Використовувати білий колір замість кольорів статусу (зелений/помаранчевий/червоний)";
+"multiprofile.active_indicator_title" = "Показувати індикатор активного профілю";
+"multiprofile.active_indicator_description" = "Показує невелике зелене підкреслення під іконкою поточного активного профілю";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

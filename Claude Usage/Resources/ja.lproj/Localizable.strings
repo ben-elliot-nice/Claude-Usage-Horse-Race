@@ -538,6 +538,8 @@
 "multiprofile.show_label_description" = "アイコンの下にプロファイル名を表示";
 "multiprofile.use_system_color" = "システムカラーを使用";
 "multiprofile.use_system_color_description" = "ステータス色の代わりにMacのアクセントカラーを使用";
+"multiprofile.active_indicator_title" = "アクティブプロファイルインジケーターを表示";
+"multiprofile.active_indicator_description" = "現在アクティブなプロファイルのアイコンの下に小さな緑色の下線を表示します";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

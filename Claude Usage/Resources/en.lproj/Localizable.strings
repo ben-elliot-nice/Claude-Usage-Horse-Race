@@ -535,6 +535,8 @@
 "multiprofile.show_label_description" = "Display profile name below the icon";
 "multiprofile.use_system_color" = "Monochrome";
 "multiprofile.use_system_color_description" = "Use white color instead of status colors (green/orange/red)";
+"multiprofile.active_indicator_title" = "Show Active Profile Indicator";
+"multiprofile.active_indicator_description" = "Show a small green underline under the icon of the currently active profile";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

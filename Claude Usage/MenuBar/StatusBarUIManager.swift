@@ -375,7 +375,7 @@ final class StatusBarUIManager {
                 )
             }
 
-            if profile.id == activeProfileId {
+            if profile.id == activeProfileId && config.showActiveProfileIndicator {
                 let underlinedImage = addGreenUnderline(to: image)
                 underlinedImage.isTemplate = false
                 button.image = underlinedImage

@@ -239,6 +239,21 @@ struct ManageProfilesView: View {
                                 )
                             )
 
+                            // Show Active Profile Indicator Toggle
+                            SettingToggle(
+                                title: "multiprofile.active_indicator_title".localized,
+                                description: "multiprofile.active_indicator_description".localized,
+                                isOn: Binding(
+                                    get: { profileManager.multiProfileConfig.showActiveProfileIndicator },
+                                    set: { showIndicator in
+                                        var config = profileManager.multiProfileConfig
+                                        config.showActiveProfileIndicator = showIndicator
+                                        profileManager.updateMultiProfileConfig(config)
+                                        NotificationCenter.default.post(name: .displayModeChanged, object: nil)
+                                    }
+                                )
+                            )
+
                             // Info message
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "info.circle.fill")

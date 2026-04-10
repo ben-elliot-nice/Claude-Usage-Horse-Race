@@ -536,6 +536,8 @@
 "multiprofile.show_label_description" = "在图标下方显示配置文件名称";
 "multiprofile.use_system_color" = "单色";
 "multiprofile.use_system_color_description" = "使用白色而不是状态颜色（绿色/橙色/红色）";
+"multiprofile.active_indicator_title" = "显示活动配置文件指示器";
+"multiprofile.active_indicator_description" = "在当前活动配置文件的图标下显示一条小的绿色下划线";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */

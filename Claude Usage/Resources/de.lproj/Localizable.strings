@@ -538,6 +538,8 @@
 "multiprofile.show_label_description" = "Profilname unter dem Symbol anzeigen";
 "multiprofile.use_system_color" = "Systemfarbe verwenden";
 "multiprofile.use_system_color_description" = "Akzentfarbe des Mac anstelle der Statusfarben verwenden";
+"multiprofile.active_indicator_title" = "Aktiven Profil-Indikator anzeigen";
+"multiprofile.active_indicator_description" = "Zeigt einen kleinen grünen Strich unter dem Symbol des derzeit aktiven Profils an";
 
 /* ==================== */
 /* MARK: - General Settings (Profile-Level) */
