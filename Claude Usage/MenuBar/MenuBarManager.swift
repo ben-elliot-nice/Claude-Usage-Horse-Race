@@ -116,11 +116,13 @@ class MenuBarManager: NSObject, ObservableObject {
         } else {
             // Single profile mode - setup with active profile's config
             let config = profileManager.activeProfile?.iconConfig ?? .default
-            let hasUsageCredentials = profileManager.activeProfile?.hasUsageCredentials ?? false
+            // Includes system Keychain CLI credentials as a fallback so users who
+            // only authenticated via `claude login` still get metrics enabled.
+            let hasCredentials = hasAnyAvailableCredentials()
 
-            // If no usage credentials, create empty config to show default logo
+            // If no credentials anywhere, create empty config to show default logo
             let displayConfig: MenuBarIconConfiguration
-            if !hasUsageCredentials {
+            if !hasCredentials {
                 displayConfig = MenuBarIconConfiguration(
                     colorMode: config.colorMode,
                     singleColorHex: config.singleColorHex,
@@ -141,11 +143,12 @@ class MenuBarManager: NSObject, ObservableObject {
         // Setup popover
         setupPopover()
 
-        // Load saved data from active profile first (provides immediate feedback)
-        // BUT only if profile has usage credentials - CLI alone can't show usage
+        // Load saved data from active profile first (provides immediate feedback).
+        // Credential check includes system Keychain CLI fallback so users who
+        // authenticated only via `claude login` still see usage data.
         if let profile = profileManager.activeProfile {
-            if profile.hasUsageCredentials {
-                // Profile has usage credentials - show saved usage data if available
+            if hasAnyAvailableCredentials() {
+                // Credentials available - show saved usage data if present
                 if let savedUsage = profile.claudeUsage {
                     usage = savedUsage
                 }
@@ -153,10 +156,10 @@ class MenuBarManager: NSObject, ObservableObject {
                     apiUsage = savedAPIUsage
                 }
             } else {
-                // No usage credentials - clear any old usage data and show default logo
+                // No credentials anywhere - clear any old usage data and show default logo
                 usage = .empty
                 apiUsage = nil
-                LoggingService.shared.log("MenuBarManager: Profile has no usage credentials, showing default logo")
+                LoggingService.shared.log("MenuBarManager: No credentials available (profile or system keychain), showing default logo")
             }
             updateAllStatusBarIcons()
         }
@@ -166,9 +169,9 @@ class MenuBarManager: NSObject, ObservableObject {
             // Only refresh if we haven't refreshed recently (avoid duplicate on startup)
             guard let self = self else { return }
 
-            // Skip if profile has no usage credentials (CLI alone can't be used)
-            guard let profile = self.profileManager.activeProfile, profile.hasUsageCredentials else {
-                LoggingService.shared.log("Skipping network-available refresh (no usage credentials)")
+            // Skip only if no credentials exist anywhere (profile or system keychain)
+            guard self.hasAnyAvailableCredentials() else {
+                LoggingService.shared.log("Skipping network-available refresh (no credentials available)")
                 return
             }
 
@@ -181,14 +184,14 @@ class MenuBarManager: NSObject, ObservableObject {
         }
         networkMonitor.startMonitoring()
 
-        // Initial data fetch (with small delay for launch-at-login scenarios)
-        // Only if profile has usage credentials (not just CLI)
-        if let profile = profileManager.activeProfile, profile.hasUsageCredentials {
+        // Initial data fetch (with small delay for launch-at-login scenarios).
+        // Includes system Keychain CLI credentials as a fallback.
+        if hasAnyAvailableCredentials() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.refreshUsage()
             }
         } else {
-            LoggingService.shared.log("Skipping initial refresh (no usage credentials)")
+            LoggingService.shared.log("Skipping initial refresh (no credentials available)")
         }
 
         // Start auto-refresh timer with active profile's interval
@@ -805,6 +808,30 @@ class MenuBarManager: NSObject, ObservableObject {
         return statusBarUIManager?.hasValidStatusBar ?? false
     }
 
+    /// Checks if ANY credentials are available for the active profile, including
+    /// system Keychain CLI credentials. Mirrors the fallback logic in
+    /// `ClaudeAPIService.getAuthentication()` so the refresh path isn't gated off
+    /// before the API service has a chance to discover system-level credentials.
+    private func hasAnyAvailableCredentials() -> Bool {
+        guard let profile = profileManager.activeProfile else { return false }
+
+        // Profile-local credentials (Claude.ai, API Console, saved CLI OAuth)
+        if profile.hasUsageCredentials { return true }
+
+        // Fall back to system Keychain CLI credentials
+        do {
+            if let systemCreds = try ClaudeCodeSyncService.shared.readSystemCredentials(),
+               !ClaudeCodeSyncService.shared.isTokenExpired(systemCreds),
+               ClaudeCodeSyncService.shared.extractAccessToken(from: systemCreds) != nil {
+                return true
+            }
+        } catch {
+            LoggingService.shared.log("MenuBarManager.hasAnyAvailableCredentials: system keychain check failed: \(error.localizedDescription)")
+        }
+
+        return false
+    }
+
     private func setupMultiProfileMode() {
         let selectedProfiles = profileManager.getSelectedProfiles()
         let config = profileManager.multiProfileConfig
@@ -1039,9 +1066,12 @@ class MenuBarManager: NSObject, ObservableObject {
         LoggingService.shared.log("  - Profile: '\(profile.name)'")
         LoggingService.shared.log("  - hasUsageCredentials: \(profile.hasUsageCredentials)")
 
-        // Check for usage credentials (Claude.ai or API Console, not just CLI)
-        guard profile.hasUsageCredentials else {
-            LoggingService.shared.log("MenuBarManager: Skipping refresh - no usage credentials")
+        // Check for ANY available credentials, including system Keychain CLI fallback.
+        // Without this fallback, users who only authenticated via `claude login`
+        // would be gated off here before ClaudeAPIService.getAuthentication() could
+        // discover their system-level credentials.
+        guard hasAnyAvailableCredentials() else {
+            LoggingService.shared.log("MenuBarManager: Skipping refresh - no credentials available (profile or system keychain)")
             // Update icons to show default logo if needed
             updateAllStatusBarIcons()
             return
