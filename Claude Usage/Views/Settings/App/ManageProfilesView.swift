@@ -224,6 +224,36 @@ struct ManageProfilesView: View {
                                 )
                             )
 
+                            // Show Remaining Percentage Toggle
+                            SettingToggle(
+                                title: "appearance.show_remaining_title".localized,
+                                description: "appearance.show_remaining_description".localized,
+                                isOn: Binding(
+                                    get: { profileManager.multiProfileConfig.showRemainingPercentage },
+                                    set: { showRemaining in
+                                        var config = profileManager.multiProfileConfig
+                                        config.showRemainingPercentage = showRemaining
+                                        profileManager.updateMultiProfileConfig(config)
+                                        NotificationCenter.default.post(name: .displayModeChanged, object: nil)
+                                    }
+                                )
+                            )
+
+                            // Show Active Profile Indicator Toggle
+                            SettingToggle(
+                                title: "multiprofile.active_indicator_title".localized,
+                                description: "multiprofile.active_indicator_description".localized,
+                                isOn: Binding(
+                                    get: { profileManager.multiProfileConfig.showActiveProfileIndicator },
+                                    set: { showIndicator in
+                                        var config = profileManager.multiProfileConfig
+                                        config.showActiveProfileIndicator = showIndicator
+                                        profileManager.updateMultiProfileConfig(config)
+                                        NotificationCenter.default.post(name: .displayModeChanged, object: nil)
+                                    }
+                                )
+                            )
+
                             // Info message
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "info.circle.fill")

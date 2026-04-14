@@ -16,6 +16,12 @@ final class StatusBarUIManager {
     // Dictionary to hold status items keyed by profile ID (multi-profile mode)
     private var multiProfileStatusItems: [UUID: NSStatusItem] = [:]
 
+    // Peak hours indicator (independent of metric system)
+    private var peakHoursStatusItem: NSStatusItem?
+    private var peakHoursTimer: Timer?
+    private weak var peakHoursTarget: AnyObject?
+    private var peakHoursAction: Selector?
+
     // Current display mode
     private var isMultiProfileMode: Bool = false
 
@@ -49,6 +55,7 @@ final class StatusBarUIManager {
             if let button = statusItem.button {
                 button.action = action
                 button.target = target
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 // Set a temporary placeholder - will be updated with actual logo
                 button.title = ""
             } else {
@@ -66,6 +73,7 @@ final class StatusBarUIManager {
                 if let button = statusItem.button {
                     button.action = action
                     button.target = target
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 } else {
                     LoggingService.shared.logWarning("Status bar button is nil for \(metricConfig.metricType.displayName) - screens: \(NSScreen.screens.count)")
                 }
@@ -115,6 +123,7 @@ final class StatusBarUIManager {
             if let button = statusItem.button {
                 button.action = action
                 button.target = target
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 if metricType == .session {
                     // Default logo placeholder
                     button.title = ""
@@ -161,7 +170,75 @@ final class StatusBarUIManager {
 
         isMultiProfileMode = false
 
+        removePeakHoursIndicator()
+
         LoggingService.shared.logUIEvent("Status bar cleaned up")
+    }
+
+    // MARK: - Peak Hours Indicator
+
+    /// Starts monitoring peak hours. Shows the flame icon only during peak hours.
+    func setupPeakHoursIndicator(target: AnyObject, action: Selector) {
+        removePeakHoursIndicator()
+
+        peakHoursTarget = target
+        peakHoursAction = action
+
+        // Show immediately if currently peak
+        updatePeakHoursIcon()
+
+        peakHoursTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            self?.updatePeakHoursIcon()
+        }
+        peakHoursTimer?.tolerance = 10
+    }
+
+    /// Removes the peak hours status item and stops monitoring.
+    func removePeakHoursIndicator() {
+        peakHoursTimer?.invalidate()
+        peakHoursTimer = nil
+        peakHoursTarget = nil
+        peakHoursAction = nil
+        removePeakHoursStatusItem()
+    }
+
+    /// Updates the peak hours icon: shows during peak, hides when off-peak.
+    func updatePeakHoursIcon() {
+        let isPeak = PeakHoursService.checkIsPeakHours()
+
+        if isPeak {
+            // Create the status item if not already showing
+            if peakHoursStatusItem == nil, let target = peakHoursTarget, let action = peakHoursAction {
+                let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+                if let button = statusItem.button {
+                    button.action = action
+                    button.target = target
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+                }
+                peakHoursStatusItem = statusItem
+            }
+            if let button = peakHoursStatusItem?.button {
+                let menuBarIsDark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                let image = renderer.createPeakHoursIcon(isPeak: true, isDarkMode: menuBarIsDark)
+                image.isTemplate = false
+                setButtonImage(button, image: image)
+            }
+        } else {
+            // Remove the icon when off-peak
+            removePeakHoursStatusItem()
+        }
+    }
+
+    private func removePeakHoursStatusItem() {
+        if let item = peakHoursStatusItem {
+            if let button = item.button {
+                button.image = nil
+                button.action = nil
+                button.target = nil
+            }
+            NSStatusBar.system.removeStatusItem(item)
+        }
+        peakHoursStatusItem = nil
     }
 
     // MARK: - Multi-Profile Mode
@@ -182,6 +259,7 @@ final class StatusBarUIManager {
             if let button = statusItem.button {
                 button.action = action
                 button.target = target
+                button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 button.title = ""
             } else {
                 LoggingService.shared.logWarning("Multi-profile status bar button is nil - screens: \(NSScreen.screens.count)")
@@ -197,6 +275,7 @@ final class StatusBarUIManager {
                 if let button = statusItem.button {
                     button.action = action
                     button.target = target
+                    button.sendAction(on: [.leftMouseUp, .rightMouseUp])
                 } else {
                     LoggingService.shared.logWarning("Multi-profile status bar button is nil for \(profile.name) - screens: \(NSScreen.screens.count)")
                 }
@@ -210,8 +289,20 @@ final class StatusBarUIManager {
         observeAppearanceChanges()
     }
 
+    /// Adds a thin green underline to an image to indicate the active profile
+    private func addGreenUnderline(to image: NSImage) -> NSImage {
+        let newImage = NSImage(size: image.size)
+        newImage.lockFocus()
+        defer { newImage.unlockFocus() }
+        // Shift content up 2px to create a 1px gap above the underline
+        image.draw(at: NSPoint(x: 0, y: 2), from: .zero, operation: .copy, fraction: 1.0)
+        NSColor.systemGreen.setFill()
+        NSBezierPath(rect: NSRect(x: 1, y: 0, width: image.size.width - 2, height: 1)).fill()
+        return newImage
+    }
+
     /// Updates all multi-profile status items
-    func updateMultiProfileButtons(profiles: [Profile], config: MultiProfileDisplayConfig) {
+    func updateMultiProfileButtons(profiles: [Profile], config: MultiProfileDisplayConfig, activeProfileId: UUID? = nil) {
         guard isMultiProfileMode else { return }
 
         for profile in profiles where profile.isSelectedForDisplay {
@@ -225,7 +316,7 @@ final class StatusBarUIManager {
 
             // Get usage data for this profile
             let usage = profile.claudeUsage ?? ClaudeUsage.empty
-            let showRemaining = profile.iconConfig.showRemainingPercentage
+            let showRemaining = config.showRemainingPercentage
 
             // Calculate percentages
             let sessionUsed = usage.effectiveSessionPercentage
@@ -363,8 +454,14 @@ final class StatusBarUIManager {
                 )
             }
 
-            image.isTemplate = useMonochrome && !config.showPaceMarker
-            button.image = image
+            if profile.id == activeProfileId && config.showActiveProfileIndicator {
+                let underlinedImage = addGreenUnderline(to: image)
+                underlinedImage.isTemplate = false
+                button.image = underlinedImage
+            } else {
+                image.isTemplate = useMonochrome && !config.showPaceMarker
+                button.image = image
+            }
         }
     }
 

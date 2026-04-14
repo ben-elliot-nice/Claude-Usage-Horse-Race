@@ -51,6 +51,9 @@ class MenuBarManager: NSObject, ObservableObject {
     // Feedback prompt window reference
     private var feedbackWindow: NSWindow?
 
+    // Peak hours popover (separate from main popover)
+    private var peakHoursPopover: NSPopover?
+
     // Track which button is currently showing the popover
     private weak var currentPopoverButton: NSStatusBarButton?
 
@@ -92,6 +95,9 @@ class MenuBarManager: NSObject, ObservableObject {
     private var wakeObserver: NSObjectProtocol?
     private var lastAutoRefreshTime: Date = .distantPast
 
+    // Observer for peak hours setting changes
+    private var peakHoursObserver: NSObjectProtocol?
+
     // MARK: - Image Caching (CPU Optimization)
     private var cachedImage: NSImage?
     private var cachedImageKey: String = ""
@@ -116,11 +122,13 @@ class MenuBarManager: NSObject, ObservableObject {
         } else {
             // Single profile mode - setup with active profile's config
             let config = profileManager.activeProfile?.iconConfig ?? .default
-            let hasUsageCredentials = profileManager.activeProfile?.hasUsageCredentials ?? false
+            // Includes system Keychain CLI credentials as a fallback so users who
+            // only authenticated via `claude login` still get metrics enabled.
+            let hasCredentials = hasAnyAvailableCredentials()
 
-            // If no usage credentials, create empty config to show default logo
+            // If no credentials anywhere, create empty config to show default logo
             let displayConfig: MenuBarIconConfiguration
-            if !hasUsageCredentials {
+            if !hasCredentials {
                 displayConfig = MenuBarIconConfiguration(
                     colorMode: config.colorMode,
                     singleColorHex: config.singleColorHex,
@@ -141,11 +149,12 @@ class MenuBarManager: NSObject, ObservableObject {
         // Setup popover
         setupPopover()
 
-        // Load saved data from active profile first (provides immediate feedback)
-        // BUT only if profile has usage credentials - CLI alone can't show usage
+        // Load saved data from active profile first (provides immediate feedback).
+        // Credential check includes system Keychain CLI fallback so users who
+        // authenticated only via `claude login` still see usage data.
         if let profile = profileManager.activeProfile {
-            if profile.hasUsageCredentials {
-                // Profile has usage credentials - show saved usage data if available
+            if hasAnyAvailableCredentials() {
+                // Credentials available - show saved usage data if present
                 if let savedUsage = profile.claudeUsage {
                     usage = savedUsage
                 }
@@ -153,10 +162,10 @@ class MenuBarManager: NSObject, ObservableObject {
                     apiUsage = savedAPIUsage
                 }
             } else {
-                // No usage credentials - clear any old usage data and show default logo
+                // No credentials anywhere - clear any old usage data and show default logo
                 usage = .empty
                 apiUsage = nil
-                LoggingService.shared.log("MenuBarManager: Profile has no usage credentials, showing default logo")
+                LoggingService.shared.log("MenuBarManager: No credentials available (profile or system keychain), showing default logo")
             }
             updateAllStatusBarIcons()
         }
@@ -166,9 +175,9 @@ class MenuBarManager: NSObject, ObservableObject {
             // Only refresh if we haven't refreshed recently (avoid duplicate on startup)
             guard let self = self else { return }
 
-            // Skip if profile has no usage credentials (CLI alone can't be used)
-            guard let profile = self.profileManager.activeProfile, profile.hasUsageCredentials else {
-                LoggingService.shared.log("Skipping network-available refresh (no usage credentials)")
+            // Skip only if no credentials exist anywhere (profile or system keychain)
+            guard self.hasAnyAvailableCredentials() else {
+                LoggingService.shared.log("Skipping network-available refresh (no credentials available)")
                 return
             }
 
@@ -181,14 +190,14 @@ class MenuBarManager: NSObject, ObservableObject {
         }
         networkMonitor.startMonitoring()
 
-        // Initial data fetch (with small delay for launch-at-login scenarios)
-        // Only if profile has usage credentials (not just CLI)
-        if let profile = profileManager.activeProfile, profile.hasUsageCredentials {
+        // Initial data fetch (with small delay for launch-at-login scenarios).
+        // Includes system Keychain CLI credentials as a fallback.
+        if hasAnyAvailableCredentials() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.refreshUsage()
             }
         } else {
-            LoggingService.shared.log("Skipping initial refresh (no usage credentials)")
+            LoggingService.shared.log("Skipping initial refresh (no credentials available)")
         }
 
         // Start auto-refresh timer with active profile's interval
@@ -214,6 +223,14 @@ class MenuBarManager: NSObject, ObservableObject {
 
         // Setup global keyboard shortcuts
         setupShortcuts()
+
+        // Start peak hours service and indicator
+        PeakHoursService.shared.start()
+        let store = SharedDataStore.shared
+        if store.loadPeakHoursIndicatorEnabled() && store.loadPeakHoursMenuIconEnabled() {
+            statusBarUIManager?.setupPeakHoursIndicator(target: self, action: #selector(togglePeakHoursPopover))
+        }
+        observePeakHoursSettingChanges()
     }
 
     private func setupShortcuts() {
@@ -469,10 +486,19 @@ class MenuBarManager: NSObject, ObservableObject {
             }
         )
 
-        return NSHostingController(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView)
+        hostingController.preferredContentSize = Constants.WindowSizes.popoverSize
+        hostingController.sizingOptions = .preferredContentSize
+        return hostingController
     }
 
     @objc private func togglePopover(_ sender: Any?) {
+        // Right-click → show context menu instead of toggling the popover
+        if let event = NSApp.currentEvent, event.type == .rightMouseUp {
+            showContextMenu(for: sender as? NSStatusBarButton)
+            return
+        }
+
         // Determine which button was clicked
         let clickedButton: NSStatusBarButton?
         if let button = sender as? NSStatusBarButton {
@@ -522,10 +548,11 @@ class MenuBarManager: NSObject, ObservableObject {
                     closePopover()
                 } else {
                     // Different button - close current and show at new position
-                    popover.performClose(nil)
+                    // Use close() instead of performClose() to avoid async race condition
+                    // No need to recreate contentViewController — SwiftUI already observes
+                    // the @Published profile properties set earlier in this method
+                    popover.close()
                     stopMonitoringForOutsideClicks()
-                    // Update content view controller for new profile data
-                    popover.contentViewController = createContentViewController()
                     popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
                     currentPopoverButton = button
                     startMonitoringForOutsideClicks()
@@ -541,6 +568,65 @@ class MenuBarManager: NSObject, ObservableObject {
                 startMonitoringForOutsideClicks()
             }
         }
+    }
+
+    @objc private func togglePeakHoursPopover(_ sender: Any?) {
+        guard let button = sender as? NSStatusBarButton else { return }
+
+        if let popover = peakHoursPopover, popover.isShown {
+            popover.close()
+            peakHoursPopover = nil
+            return
+        }
+
+        // Close the main popover if open
+        if let mainPopover = popover, mainPopover.isShown {
+            closePopover()
+        }
+
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 260, height: 140)
+        popover.behavior = .transient
+        popover.animates = true
+        popover.contentViewController = NSHostingController(rootView: PeakHoursPopoverView())
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        peakHoursPopover = popover
+    }
+
+    /// Shows a lightweight context menu (Refresh / Settings / Quit) anchored to the
+    /// status bar button that received the right-click.
+    private func showContextMenu(for button: NSStatusBarButton?) {
+        let menu = NSMenu()
+
+        let refreshItem = NSMenuItem(title: "common.refresh".localized, action: #selector(contextMenuRefresh), keyEquivalent: "")
+        refreshItem.target = self
+        menu.addItem(refreshItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let settingsItem = NSMenuItem(title: "common.settings".localized, action: #selector(preferencesClicked), keyEquivalent: ",")
+        settingsItem.keyEquivalentModifierMask = .command
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let quitItem = NSMenuItem(title: "common.quit".localized, action: #selector(quitClicked), keyEquivalent: "q")
+        quitItem.keyEquivalentModifierMask = .command
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        // Show the menu at the button's location
+        if let button = button {
+            // Position the menu below the status bar button
+            if let window = button.window {
+                let buttonRect = button.convert(button.bounds, to: nil)
+                let screenRect = window.convertToScreen(buttonRect)
+                menu.popUp(positioning: nil, at: NSPoint(x: screenRect.origin.x, y: screenRect.origin.y), in: nil)
+            }
+        }
+    }
+
+    @objc private func contextMenuRefresh() {
+        refreshUsage()
     }
 
     private func closePopover() {
@@ -587,7 +673,8 @@ class MenuBarManager: NSObject, ObservableObject {
             let config = profileManager.multiProfileConfig
             statusBarUIManager?.updateMultiProfileButtons(
                 profiles: profileManager.profiles,
-                config: config
+                config: config,
+                activeProfileId: profileManager.activeProfile?.id
             )
         } else {
             // Single profile mode - use the standard update
@@ -754,6 +841,24 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
 
+    private func observePeakHoursSettingChanges() {
+        peakHoursObserver = NotificationCenter.default.addObserver(
+            forName: .peakHoursSettingChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            let store = SharedDataStore.shared
+            if store.loadPeakHoursIndicatorEnabled() && store.loadPeakHoursMenuIconEnabled() {
+                self.statusBarUIManager?.setupPeakHoursIndicator(
+                    target: self, action: #selector(self.togglePeakHoursPopover)
+                )
+            } else {
+                self.statusBarUIManager?.removePeakHoursIndicator()
+            }
+        }
+    }
+
     private func handleDisplayModeChange() {
         let displayMode = profileManager.displayMode
 
@@ -801,6 +906,30 @@ class MenuBarManager: NSObject, ObservableObject {
         return statusBarUIManager?.hasValidStatusBar ?? false
     }
 
+    /// Checks if ANY credentials are available for the active profile, including
+    /// system Keychain CLI credentials. Mirrors the fallback logic in
+    /// `ClaudeAPIService.getAuthentication()` so the refresh path isn't gated off
+    /// before the API service has a chance to discover system-level credentials.
+    private func hasAnyAvailableCredentials() -> Bool {
+        guard let profile = profileManager.activeProfile else { return false }
+
+        // Profile-local credentials (Claude.ai, API Console, saved CLI OAuth)
+        if profile.hasUsageCredentials { return true }
+
+        // Fall back to system Keychain CLI credentials
+        do {
+            if let systemCreds = try ClaudeCodeSyncService.shared.readSystemCredentials(),
+               !ClaudeCodeSyncService.shared.isTokenExpired(systemCreds),
+               ClaudeCodeSyncService.shared.extractAccessToken(from: systemCreds) != nil {
+                return true
+            }
+        } catch {
+            LoggingService.shared.log("MenuBarManager.hasAnyAvailableCredentials: system keychain check failed: \(error.localizedDescription)")
+        }
+
+        return false
+    }
+
     private func setupMultiProfileMode() {
         let selectedProfiles = profileManager.getSelectedProfiles()
         let config = profileManager.multiProfileConfig
@@ -814,7 +943,7 @@ class MenuBarManager: NSObject, ObservableObject {
         // Defer icon update to next run loop iteration to let NSStatusBar finalize layout
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.statusBarUIManager?.updateMultiProfileButtons(profiles: self.profileManager.profiles, config: config)
+            self.statusBarUIManager?.updateMultiProfileButtons(profiles: self.profileManager.profiles, config: config, activeProfileId: self.profileManager.activeProfile?.id)
         }
 
         LoggingService.shared.log("MenuBarManager: Multi-profile mode enabled with \(selectedProfiles.count) profiles, style=\(config.iconStyle.rawValue)")
@@ -895,6 +1024,14 @@ class MenuBarManager: NSObject, ObservableObject {
                         // If this is the active profile, also update the manager's usage
                         if profile.id == self.profileManager.activeProfile?.id {
                             self.usage = newUsage
+
+                            // Write statusline cache for instant CLI rendering
+                            if StatuslineService.shared.isInstalled {
+                                StatuslineService.shared.writeUsageCache(
+                                    usage: newUsage,
+                                    profileName: profile.name
+                                )
+                            }
                         }
                     }
                 } catch {
@@ -929,7 +1066,8 @@ class MenuBarManager: NSObject, ObservableObject {
                 let config = self.profileManager.multiProfileConfig
                 self.statusBarUIManager?.updateMultiProfileButtons(
                     profiles: self.profileManager.profiles,
-                    config: config
+                    config: config,
+                    activeProfileId: self.profileManager.activeProfile?.id
                 )
                 self.consecutiveRefreshFailures = 0
                 self.lastRefreshError = nil
@@ -1026,9 +1164,12 @@ class MenuBarManager: NSObject, ObservableObject {
         LoggingService.shared.log("  - Profile: '\(profile.name)'")
         LoggingService.shared.log("  - hasUsageCredentials: \(profile.hasUsageCredentials)")
 
-        // Check for usage credentials (Claude.ai or API Console, not just CLI)
-        guard profile.hasUsageCredentials else {
-            LoggingService.shared.log("MenuBarManager: Skipping refresh - no usage credentials")
+        // Check for ANY available credentials, including system Keychain CLI fallback.
+        // Without this fallback, users who only authenticated via `claude login`
+        // would be gated off here before ClaudeAPIService.getAuthentication() could
+        // discover their system-level credentials.
+        guard hasAnyAvailableCredentials() else {
+            LoggingService.shared.log("MenuBarManager: Skipping refresh - no credentials available (profile or system keychain)")
             // Update icons to show default logo if needed
             updateAllStatusBarIcons()
             return
@@ -1629,22 +1770,32 @@ extension MenuBarManager: NSPopoverDelegate {
         // Stop monitoring for outside clicks when detaching
         stopMonitoringForOutsideClicks()
 
-        // Create a new window with NEW content view controller
-        // This prevents the popover from losing its content
-        let newContentViewController = createContentViewController()
+        // Create content view controller sized for a window (not a popover).
+        // We don't use createContentViewController() here because its
+        // preferredContentSize/sizingOptions (added by PR #200 for popover
+        // positioning) conflict with the window's layout constraints.
+        let contentView = PopoverContentView(
+            manager: self,
+            onRefresh: { [weak self] in self?.refreshUsage() },
+            onPreferences: { [weak self] in
+                self?.closePopoverOrWindow()
+                self?.preferencesClicked()
+            }
+        )
+        let hostingController = NSHostingController(rootView: contentView)
 
         let window = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 600),
-            styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel, .hudWindow],
+            contentRect: NSRect(x: 0, y: 0, width: 280, height: 600),
+            styleMask: [.titled, .closable, .nonactivatingPanel, .hudWindow],
             backing: .buffered,
             defer: false
         )
-        window.contentViewController = newContentViewController
+        window.contentViewController = hostingController
         window.title = ""
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
-        window.setContentSize(NSSize(width: 320, height: 600))
+        window.setContentSize(NSSize(width: 280, height: 600))
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.isRestorable = false
@@ -1668,6 +1819,7 @@ extension MenuBarManager: StatusBarUIManagerDelegate {
         cachedIsDarkMode = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         cachedImageKey = ""
         updateAllStatusBarIcons()
+        statusBarUIManager?.updatePeakHoursIcon()
     }
 }
 

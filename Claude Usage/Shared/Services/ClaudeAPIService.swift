@@ -135,6 +135,9 @@ class ClaudeAPIService: APIServiceProtocol {
             // Existing claude.ai authentication
             request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+            request.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+            request.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
 
         case .cliOAuth(let accessToken):
             // CLI OAuth authentication (requires specific headers)
@@ -242,6 +245,9 @@ class ClaudeAPIService: APIServiceProtocol {
             var request = URLRequest(url: url)
             request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+            request.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+            request.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
             request.httpMethod = "GET"
             request.timeoutInterval = 30
 
@@ -586,6 +592,9 @@ class ClaudeAPIService: APIServiceProtocol {
         var request = URLRequest(url: url)
         request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+        request.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+        request.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
         request.httpMethod = "GET"
         request.timeoutInterval = 30
 
@@ -919,6 +928,10 @@ class ClaudeAPIService: APIServiceProtocol {
         var conversationRequest = URLRequest(url: conversationURL)
         conversationRequest.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
         conversationRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        conversationRequest.setValue("application/json", forHTTPHeaderField: "Accept")
+        conversationRequest.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+        conversationRequest.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+        conversationRequest.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
         conversationRequest.httpMethod = "POST"
 
         let conversationBody: [String: Any] = [
@@ -963,6 +976,10 @@ class ClaudeAPIService: APIServiceProtocol {
         var messageRequest = URLRequest(url: messageURL)
         messageRequest.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
         messageRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        messageRequest.setValue("application/json", forHTTPHeaderField: "Accept")
+        messageRequest.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+        messageRequest.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+        messageRequest.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
         messageRequest.httpMethod = "POST"
 
         let messageBody: [String: Any] = [
@@ -1001,6 +1018,9 @@ class ClaudeAPIService: APIServiceProtocol {
 
         var deleteRequest = URLRequest(url: deleteURL)
         deleteRequest.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
+        deleteRequest.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+        deleteRequest.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
+        deleteRequest.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
         deleteRequest.httpMethod = "DELETE"
 
         // Attempt to delete, but don't fail if deletion fails

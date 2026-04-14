@@ -2,8 +2,8 @@
    Localizable.strings
    Claude Usage Tracker
 
-   Portuguese (Português)
-   Created by Claude Code on 2025-12-27.
+   Brazilian Portuguese (Português do Brasil)
+   Created by Hudson Arruda on 2026-03-18.
 */
 
 /* ==================== */
@@ -473,19 +473,19 @@
 "claudecode.context_info" = "O contexto pode mostrar ~80-95% em vez de 100% — o Claude comprime automaticamente antes do limite, e os tokens de saída também usam espaço de contexto.";
 "claudecode.element_colors_title" = "Cores dos Elementos";
 "claudecode.element_color_directory" = "Diretório";
-"claudecode.element_color_branch" = "Ramo";
+"claudecode.element_color_branch" = "Branch";
 "claudecode.element_color_model" = "Modelo";
 "claudecode.element_color_profile" = "Perfil";
 "claudecode.element_color_context" = "Contexto";
 "claudecode.element_color_separator" = "Separador";
 "claudecode.element_color_usage" = "Gradiente de uso";
-"claudecode.element_color_usage_desc" = "Substitui o gradiente de 10 níveis por uma cor fixa";
+"claudecode.element_color_usage_desc" = "Substituir o gradiente de 10 níveis por uma cor fixa";
 "claudecode.element_color_pace" = "Marcador de ritmo";
-"claudecode.element_color_pace_desc" = "Substitui os 6 níveis de cores de ritmo por uma cor fixa";
+"claudecode.element_color_pace_desc" = "Substituir as cores de ritmo de 6 níveis por uma cor fixa";
 "claudecode.element_color_weekly" = "Uso semanal";
-"claudecode.element_color_weekly_desc" = "Substitui o gradiente de uso semanal por uma cor fixa";
+"claudecode.element_color_weekly_desc" = "Substituir o gradiente de uso semanal por uma cor fixa";
 "claudecode.element_color_extra" = "Uso extra";
-"claudecode.element_color_extra_desc" = "Substitui o gradiente de uso extra (custo) por uma cor fixa";
+"claudecode.element_color_extra_desc" = "Substituir o gradiente de uso extra (custo) por uma cor fixa";
 "error.generic" = "Erro: %@";
 "personal.button_saving" = "Salvando...";
 "personal.button_setup_wizard" = "Assistente de Configuração";
