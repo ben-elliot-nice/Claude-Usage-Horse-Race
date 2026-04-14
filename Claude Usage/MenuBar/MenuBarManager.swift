@@ -51,6 +51,9 @@ class MenuBarManager: NSObject, ObservableObject {
     // Feedback prompt window reference
     private var feedbackWindow: NSWindow?
 
+    // Peak hours popover (separate from main popover)
+    private var peakHoursPopover: NSPopover?
+
     // Track which button is currently showing the popover
     private weak var currentPopoverButton: NSStatusBarButton?
 
@@ -91,6 +94,9 @@ class MenuBarManager: NSObject, ObservableObject {
     // Observer for wake-from-sleep
     private var wakeObserver: NSObjectProtocol?
     private var lastAutoRefreshTime: Date = .distantPast
+
+    // Observer for peak hours setting changes
+    private var peakHoursObserver: NSObjectProtocol?
 
     // MARK: - Image Caching (CPU Optimization)
     private var cachedImage: NSImage?
@@ -217,6 +223,13 @@ class MenuBarManager: NSObject, ObservableObject {
 
         // Setup global keyboard shortcuts
         setupShortcuts()
+
+        // Start peak hours service and indicator
+        PeakHoursService.shared.start()
+        if SharedDataStore.shared.loadPeakHoursIndicatorEnabled() {
+            statusBarUIManager?.setupPeakHoursIndicator(target: self, action: #selector(togglePeakHoursPopover))
+        }
+        observePeakHoursSettingChanges()
     }
 
     private func setupShortcuts() {
@@ -556,6 +569,29 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
 
+    @objc private func togglePeakHoursPopover(_ sender: Any?) {
+        guard let button = sender as? NSStatusBarButton else { return }
+
+        if let popover = peakHoursPopover, popover.isShown {
+            popover.close()
+            peakHoursPopover = nil
+            return
+        }
+
+        // Close the main popover if open
+        if let mainPopover = popover, mainPopover.isShown {
+            closePopover()
+        }
+
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 260, height: 140)
+        popover.behavior = .transient
+        popover.animates = true
+        popover.contentViewController = NSHostingController(rootView: PeakHoursPopoverView())
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        peakHoursPopover = popover
+    }
+
     /// Shows a lightweight context menu (Refresh / Settings / Quit) anchored to the
     /// status bar button that received the right-click.
     private func showContextMenu(for button: NSStatusBarButton?) {
@@ -800,6 +836,23 @@ class MenuBarManager: NSObject, ObservableObject {
 
             Task { @MainActor in
                 self.handleDisplayModeChange()
+            }
+        }
+    }
+
+    private func observePeakHoursSettingChanges() {
+        peakHoursObserver = NotificationCenter.default.addObserver(
+            forName: .peakHoursSettingChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            if SharedDataStore.shared.loadPeakHoursIndicatorEnabled() {
+                self.statusBarUIManager?.setupPeakHoursIndicator(
+                    target: self, action: #selector(self.togglePeakHoursPopover)
+                )
+            } else {
+                self.statusBarUIManager?.removePeakHoursIndicator()
             }
         }
     }
@@ -1764,6 +1817,7 @@ extension MenuBarManager: StatusBarUIManagerDelegate {
         cachedIsDarkMode = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         cachedImageKey = ""
         updateAllStatusBarIcons()
+        statusBarUIManager?.updatePeakHoursIcon()
     }
 }
 

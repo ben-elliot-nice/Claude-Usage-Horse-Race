@@ -931,6 +931,10 @@
 "popover.time_format_system" = "System";
 "popover.time_format_12h" = "12-hour";
 "popover.time_format_24h" = "24-hour";
+"popover.peak_hours" = "Peak Hours Indicator";
+"popover.peak_hours_desc" = "Show when Claude is in peak hours (weekdays %@)";
+"popover.peak_hours_toggle" = "Show peak hours indicator";
+"popover.peak_hours_toggle_desc" = "Display a flame icon in the menu bar and highlight the session card during peak hours";
 
 /* ==================== */
 /* MARK: - Feedback Prompt */

@@ -22,4 +22,7 @@ extension Notification.Name {
 
     /// Posted when auto-switch profile is triggered (for UI reactivity)
     static let autoSwitchProfileTriggered = Notification.Name("autoSwitchProfileTriggered")
+
+    /// Posted when the peak hours indicator setting is toggled
+    static let peakHoursSettingChanged = Notification.Name("peakHoursSettingChanged")
 }
