@@ -1100,7 +1100,11 @@ class MenuBarManager: NSObject, ObservableObject {
         }
 
         // Priority 3: System Keychain CLI OAuth token
-        if let systemCredentials = try? ClaudeCodeSyncService.shared.readSystemCredentials(),
+        // Only use system keychain for the active profile — the keychain/credentials file
+        // reflects the currently active `claude` CLI session. Using it for a non-active
+        // profile would silently return the active profile's stats.
+        if profile.id == profileManager.activeProfile?.id,
+           let systemCredentials = try? ClaudeCodeSyncService.shared.readSystemCredentials(),
            !ClaudeCodeSyncService.shared.isTokenExpired(systemCredentials),
            let accessToken = ClaudeCodeSyncService.shared.extractAccessToken(from: systemCredentials) {
             return try await apiService.fetchUsageData(oauthAccessToken: accessToken)
