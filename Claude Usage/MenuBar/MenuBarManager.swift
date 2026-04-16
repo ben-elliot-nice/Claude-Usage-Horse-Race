@@ -290,6 +290,10 @@ class MenuBarManager: NSObject, ObservableObject {
             NotificationCenter.default.removeObserver(multiProfileConfigObserver)
             self.multiProfileConfigObserver = nil
         }
+        if let peakHoursObserver = peakHoursObserver {
+            NotificationCenter.default.removeObserver(peakHoursObserver)
+            self.peakHoursObserver = nil
+        }
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
             eventMonitor = nil
