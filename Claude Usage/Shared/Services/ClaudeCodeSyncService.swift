@@ -553,6 +553,16 @@ class ClaudeCodeSyncService {
         return token
     }
 
+    func extractRefreshToken(from jsonData: String) -> String? {
+        guard let data = jsonData.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let oauth = json["claudeAiOauth"] as? [String: Any],
+              let token = oauth["refreshToken"] as? String else {
+            return nil
+        }
+        return token
+    }
+
     func extractSubscriptionInfo(from jsonData: String) -> (type: String, scopes: [String])? {
         guard let data = jsonData.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -610,13 +620,27 @@ class ClaudeCodeSyncService {
             return
         }
 
+        // Verify the system credentials belong to the same account as this profile.
+        // The refreshToken is session-scoped and only changes on explicit /login — a
+        // mismatch means the keychain holds another account's data (written by
+        // applyProfileCredentials for a different profile). Saving would corrupt this profile.
+        var profiles = ProfileStore.shared.loadProfiles()
+        if let profile = profiles.first(where: { $0.id == profileId }),
+           let storedJSON = profile.cliCredentialsJSON {
+            let freshRefreshToken = extractRefreshToken(from: freshJSON)
+            let storedRefreshToken = extractRefreshToken(from: storedJSON)
+            if let fresh = freshRefreshToken, let stored = storedRefreshToken, fresh != stored {
+                LoggingService.shared.log("⚠️ resyncBeforeSwitching: skipping for '\(profile.name)' — system refresh token differs (different account)")
+                return
+            }
+        }
+
         // Capture latest oauthAccount too, so if the user logged in with a
         // different account since the last sync we keep the profile's
         // `.claude.json` identity in sync with its keychain credentials.
         let freshOAuthAccount = readOAuthAccount()
 
-        // Update profile's stored credentials with fresh ones
-        var profiles = ProfileStore.shared.loadProfiles()
+        // Update profile's stored credentials with fresh ones (profiles already loaded above)
         guard let index = profiles.firstIndex(where: { $0.id == profileId }) else {
             return
         }
