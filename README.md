@@ -349,7 +349,7 @@ Access profile switcher in multiple places:
 - **6-Tier Pace System**: Pace markers colored by projected usage (green/teal/yellow/orange/red/purple)
 - **Interactive Popover**: One-click access with detachable floating window capability
 - **Live Status Indicator**: Real-time Claude system status from status.claude.com
-- **Multi-Language Support**: 12 languages (English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Japanese, Korean, Simplified Chinese, Turkish, Ukrainian)
+- **Multi-Language Support**: 13 languages (English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Japanese, Korean, Simplified Chinese, Traditional Chinese, Turkish, Ukrainian)
 - Adaptive colors for light/dark mode
 
 ### Automation & Intelligence
@@ -480,9 +480,9 @@ Create and manage multiple profiles:
 
 #### Language
 Application language preferences:
-- **Language Selection**: Choose from 12 supported languages
+- **Language Selection**: Choose from 13 supported languages
 - **Live Updates**: Interface updates immediately when language changes
-- Supported: English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Japanese, Korean, Simplified Chinese, Turkish, Ukrainian
+- Supported: English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese, Japanese, Korean, Simplified Chinese, Traditional Chinese, Turkish, Ukrainian
 
 #### Claude Code (Statusline)
 Terminal integration (app-wide):

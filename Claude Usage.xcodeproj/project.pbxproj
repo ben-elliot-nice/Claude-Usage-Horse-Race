@@ -160,6 +160,7 @@
 				uk,
 				"zh-ch",
 				"zh-CH",
+				"zh-Hant",
 				tr,
 			);
 			mainGroup = 05CD2CA92EA985A100004C83;
