@@ -5,6 +5,34 @@ All notable changes to Claude Usage Tracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-04-21
+
+### New Features
+
+- **Traditional Chinese (zh-Hant) Localization** (PR #218): Full translation for all UI strings — language count increased from 12 to 13
+- **Stable Menu Bar Item Positions** (PR #214): NSStatusItems now have stable `autosaveName` so menu bar managers (e.g. Ice) can remember item positions across app restarts
+
+### Bug Fixes
+
+- **Sign-In Shows Fresh Login Page**: Clear all claude.ai/anthropic cookies before sign-in; use real NSPanel popup for Google SSO (fixes "One moment please..." stuck screen); added `WKHTTPCookieStoreObserver` for immediate session key detection after login
+- **Cross-Profile Credential Contamination** (PR #215): Prevent credentials from leaking between profiles during `resyncBeforeSwitching`; restrict system keychain fallback to active profile only
+- **Menu Bar Items Disappearing on Config Changes** (PR #214): Config toggles (icon style, week display, labels) no longer destroy/recreate all status items; new `.multiProfileConfigChanged` notification separates visual tweaks from actual mode switches
+- **Peak Hours Observer Leak** (PR #214): Remove `peakHoursObserver` in `cleanup()` to prevent observer leaks and duplicate notifications
+- **Missing Translations for Multiprofile Icon Styles** (#216): Added translations for `style_circles`, `style_bars`, `style_dots`, `style_percent` in ko, es, fr, de, it, ja, pt
+
+### UI Improvements
+
+- **Manual Session Key Always Visible**: Replaced collapsed DisclosureGroup with always-visible section and OR divider in both Personal and API Console credential views
+- **Removed Incorrect CLI Tracking Note**: Removed the yellow "Usage tracking uses Claude.ai credentials" note from CLI Account view
+
+### Contributors
+
+- **@fcamblor** (Frederic Camblor) — Menu bar item persistence fix (#214), cross-profile credential contamination fix (#215)
+- **@ryanjan666** (Ryan) — Traditional Chinese localization (#218)
+- **@ddotz** — Reported missing Korean i18n keys (#216)
+
+---
+
 ## [3.1.0] - 2026-04-14
 
 ### Right-Click Context Menu
