@@ -11,8 +11,7 @@ Usage:
 
 import argparse
 import json
-import time
-from datetime import datetime, timezone
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 
