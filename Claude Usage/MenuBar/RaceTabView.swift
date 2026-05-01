@@ -185,6 +185,10 @@ struct RaceTabView: View {
     }
 
     private var raceSlugDisplay: String {
+        // Prefer the server-provided display name (e.g. "NICE-TEAM") over the UUID slug
+        if let name = raceService.standings?.name, !name.isEmpty {
+            return name
+        }
         guard let url = RaceSettings.shared.raceURL,
               let last = URL(string: url)?.lastPathComponent,
               !last.isEmpty else {
