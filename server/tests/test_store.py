@@ -73,6 +73,8 @@ def test_upsert_participant_refreshes_meta_ttl(r):
     })
     ttl = r.ttl(f"race:{slug}:meta")
     assert ttl > 100  # TTL was refreshed to full 60 days
+    p_ttl = r.ttl(f"race:{slug}:p:Ben")
+    assert 0 < p_ttl <= TTL  # participant TTL also set
 
 
 def test_get_participants_empty(r):
@@ -96,3 +98,5 @@ def test_sorted_standings_zero_limit_no_crash(r):
     participants = [{"name": "Dave", "cost_used_cents": "100", "cost_limit_cents": "0", "updated_at": "t"}]
     result = sorted_standings(participants)
     assert result[0]["name"] == "Dave"
+    # Zero limit yields 0.0 percentage — Dave still appears, just at the bottom
+    assert len(result) == 1
