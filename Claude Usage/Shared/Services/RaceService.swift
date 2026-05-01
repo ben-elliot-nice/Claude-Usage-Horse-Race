@@ -37,6 +37,7 @@ final class RaceService: ObservableObject {
         schedulePollTimer()
         Task { await push() }
         Task { await poll() }
+        Task { await register() }
     }
 
     func stop() {
@@ -55,6 +56,38 @@ final class RaceService: ObservableObject {
 
     func refresh() {
         Task { await poll() }
+    }
+
+    // MARK: - Registration
+
+    func register() async {
+        guard let urlString = RaceSettings.shared.raceURL,
+              let baseURL = URL(string: urlString) else { return }
+
+        let payload: [String: Any] = [
+            "id": RaceSettings.shared.participantID,
+            "name": RaceSettings.shared.participantName,
+        ]
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
+
+        let endpoint = baseURL.appendingPathComponent("register")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        request.timeoutInterval = 10
+
+        do {
+            let (_, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return }
+            if http.statusCode == 409 {
+                lastError = "Name taken — choose a different name in Settings"
+            } else if http.statusCode != 200 {
+                lastError = "Registration failed: HTTP \(http.statusCode)"
+            }
+        } catch {
+            // Registration failure is non-fatal — will retry on next start()
+        }
     }
 
     // MARK: - Timers
@@ -88,6 +121,7 @@ final class RaceService: ObservableObject {
         guard let (usedCents, limitCents) = resolveCostData() else { return }
 
         let payload: [String: Any] = [
+            "id": RaceSettings.shared.participantID,
             "name": RaceSettings.shared.participantName,
             "cost_used_cents": usedCents,
             "cost_limit_cents": limitCents,
@@ -105,8 +139,14 @@ final class RaceService: ObservableObject {
 
         do {
             let (_, response) = try await session.data(for: request)
-            if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-                lastError = "Push failed: HTTP \(http.statusCode)"
+            if let http = response as? HTTPURLResponse {
+                if http.statusCode == 403 {
+                    lastError = "Name conflict — update your name in Settings"
+                    pushTimer?.invalidate()
+                    pushTimer = nil
+                } else if http.statusCode != 200 {
+                    lastError = "Push failed: HTTP \(http.statusCode)"
+                }
             }
         } catch {
             lastError = "Push error: \(error.localizedDescription)"
