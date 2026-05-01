@@ -13,9 +13,9 @@ struct RaceTabView: View {
         Group {
             if profileManager.activeProfile?.connectionType != .enterprise {
                 enterpriseRequiredView
-            } else if !RaceSettings.shared.raceEnabled || RaceSettings.shared.raceURL == nil {
+            } else if !RaceSettings.shared.raceEnabled || RaceSettings.shared.raceEntries.isEmpty {
                 notConfiguredView
-            } else if let error = raceService.lastError, raceService.standings == nil {
+            } else if let error = raceService.lastError, raceService.compiledStandings.isEmpty {
                 errorView(message: error)
             } else {
                 liveView
@@ -150,7 +150,8 @@ struct RaceTabView: View {
             .padding(.bottom, 6)
 
             // Track lanes / detail list
-            if let participants = raceService.standings?.participants, !participants.isEmpty {
+            if !raceService.compiledStandings.isEmpty {
+                let participants = raceService.compiledStandings
                 if showDetail {
                     // Detail list
                     VStack(spacing: 2) {
@@ -221,16 +222,15 @@ struct RaceTabView: View {
     }
 
     private var raceSlugDisplay: String {
-        // Prefer the server-provided display name (e.g. "NICE-TEAM") over the UUID slug
-        if let name = raceService.standings?.name, !name.isEmpty {
-            return name
+        let entries = RaceSettings.shared.raceEntries
+        if entries.count == 1 {
+            return entries[0].name
+                ?? URL(string: entries[0].url)?.lastPathComponent
+                ?? "RACE"
+        } else if entries.count > 1 {
+            return "\(entries.count) races"
         }
-        guard let url = RaceSettings.shared.raceURL,
-              let last = URL(string: url)?.lastPathComponent,
-              !last.isEmpty else {
-            return raceService.standings?.raceSlug ?? "RACE"
-        }
-        return last
+        return "RACE"
     }
 
     private func relativeTime(from date: Date) -> String {

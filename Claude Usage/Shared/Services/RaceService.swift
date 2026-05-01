@@ -2,17 +2,21 @@
 import Foundation
 import Combine
 
-/// Manages push (publishing local cost burn) and poll (fetching standings)
-/// for the horse race feature. Completely independent of other app services.
+/// Manages push/poll for all joined races and compiles deduplicated standings.
 @MainActor
 final class RaceService: ObservableObject {
     static let shared = RaceService()
 
     // MARK: - Published State
 
-    @Published var standings: RaceStandings?
+    @Published var allStandings: [String: RaceStandings] = [:]
+    @Published var compiledStandings: [RaceParticipant] = []
     @Published var lastError: String?
     @Published var lastPollDate: Date?
+
+    /// Compatibility shim for RaceTabView (Task 5) — returns the first available standings.
+    /// Remove once RaceTabView is updated to use compiledStandings.
+    var standings: RaceStandings? { allStandings.values.first }
 
     // MARK: - Private
 
@@ -32,7 +36,7 @@ final class RaceService: ObservableObject {
 
     func start() {
         guard RaceSettings.shared.raceEnabled,
-              RaceSettings.shared.raceURL != nil else { return }
+              !RaceSettings.shared.raceEntries.isEmpty else { return }
         schedulePushTimer()
         schedulePollTimer()
         Task { await push() }
@@ -60,9 +64,7 @@ final class RaceService: ObservableObject {
 
     // MARK: - Race Creation
 
-    /// Creates a new race on the server.
-    /// On success, stores the full raceURL and raceName in RaceSettings, calls restart().
-    /// Throws RaceCreationError on failure.
+    /// Creates a new race on the server and adds it to raceEntries.
     func createRace(name: String) async throws -> String {
         guard let base = RaceSettings.shared.serverBaseURL,
               let serverURL = URL(string: base) else {
@@ -88,8 +90,8 @@ final class RaceService: ObservableObject {
         let decoded = try decoder.decode(CreateRaceResponse.self, from: data)
         let raceURL = "\(base)/races/\(decoded.slug)"
 
-        RaceSettings.shared.raceURL = raceURL
-        RaceSettings.shared.raceName = decoded.name
+        let entry = RaceEntry(url: raceURL, name: decoded.name)
+        RaceSettings.shared.addRaceEntry(entry)
         restart()
 
         return raceURL
@@ -98,8 +100,13 @@ final class RaceService: ObservableObject {
     // MARK: - Registration
 
     func register() async {
-        guard let urlString = RaceSettings.shared.raceURL,
-              let baseURL = URL(string: urlString) else { return }
+        for entry in RaceSettings.shared.raceEntries {
+            await registerInRace(url: entry.url)
+        }
+    }
+
+    private func registerInRace(url: String) async {
+        guard let baseURL = URL(string: url) else { return }
 
         let payload: [String: Any] = [
             "id": RaceSettings.shared.participantID,
@@ -107,8 +114,7 @@ final class RaceService: ObservableObject {
         ]
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
 
-        let endpoint = baseURL.appendingPathComponent("register")
-        var request = URLRequest(url: endpoint)
+        var request = URLRequest(url: baseURL.appendingPathComponent("register"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = body
@@ -123,7 +129,7 @@ final class RaceService: ObservableObject {
                 lastError = "Registration failed: HTTP \(http.statusCode)"
             }
         } catch {
-            // Registration failure is non-fatal — will retry on next start()
+            // Non-fatal — will retry on next start()
         }
     }
 
@@ -149,26 +155,31 @@ final class RaceService: ObservableObject {
         pollTimer = timer
     }
 
-    // MARK: - Push
+    // MARK: - Push (all races sequentially)
 
     func push() async {
-        guard let urlString = RaceSettings.shared.raceURL,
-              let baseURL = URL(string: urlString) else { return }
+        guard let costData = resolveCostData() else { return }
+        let entries = RaceSettings.shared.raceEntries
+        guard !entries.isEmpty else { return }
 
-        guard let (usedCents, limitCents) = resolveCostData() else { return }
+        for entry in entries {
+            await pushToEntry(url: entry.url, costData: costData)
+        }
+    }
+
+    private func pushToEntry(url: String, costData: (usedCents: Int, limitCents: Int)) async {
+        guard let baseURL = URL(string: url) else { return }
 
         let payload: [String: Any] = [
             "id": RaceSettings.shared.participantID,
             "name": RaceSettings.shared.participantName,
-            "cost_used_cents": usedCents,
-            "cost_limit_cents": limitCents,
+            "cost_used_cents": costData.usedCents,
+            "cost_limit_cents": costData.limitCents,
             "updated_at": Self.iso8601Formatter.string(from: Date())
         ]
-
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
 
-        let endpoint = baseURL.appendingPathComponent("participant")
-        var request = URLRequest(url: endpoint)
+        var request = URLRequest(url: baseURL.appendingPathComponent("participant"))
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = body
@@ -190,47 +201,65 @@ final class RaceService: ObservableObject {
         }
     }
 
-    // MARK: - Poll
+    // MARK: - Poll (all races sequentially)
 
     func poll() async {
-        guard let urlString = RaceSettings.shared.raceURL,
-              let baseURL = URL(string: urlString) else { return }
+        let entries = RaceSettings.shared.raceEntries
+        guard !entries.isEmpty else { return }
 
-        let endpoint = baseURL.appendingPathComponent("standings")
-        var request = URLRequest(url: endpoint)
-        request.timeoutInterval = 10
+        var successCount = 0
 
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                lastError = "Poll failed: bad status"
-                return
+        for entry in entries {
+            guard let baseURL = URL(string: entry.url) else { continue }
+            var request = URLRequest(url: baseURL.appendingPathComponent("standings"))
+            request.timeoutInterval = 10
+
+            do {
+                let (data, response) = try await session.data(for: request)
+                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
+                let decoded = try decoder.decode(RaceStandings.self, from: data)
+                allStandings[entry.url] = decoded
+                if let serverName = decoded.name, !serverName.isEmpty {
+                    RaceSettings.shared.updateRaceEntryName(url: entry.url, name: serverName)
+                }
+                successCount += 1
+            } catch {
+                // Per-race failure — continue polling others
             }
-            let decoded = try decoder.decode(RaceStandings.self, from: data)
-            standings = decoded
-            lastError = nil
-            lastPollDate = Date()
-        } catch {
-            lastError = error.localizedDescription
         }
+
+        compiledStandings = Self.compile(from: allStandings)
+        lastPollDate = Date()
+        lastError = successCount == 0 ? "Could not reach race server" : nil
+    }
+
+    // MARK: - Compile (static — testable without singleton)
+
+    /// Deduplicates participants across all standings by display name,
+    /// keeping each person's entry with the highest percentUsed.
+    /// Returns sorted descending by percentUsed.
+    nonisolated static func compile(from allStandings: [String: RaceStandings]) -> [RaceParticipant] {
+        var best: [String: RaceParticipant] = [:]
+        for standings in allStandings.values {
+            for participant in standings.participants {
+                if let existing = best[participant.name] {
+                    if participant.percentUsed > existing.percentUsed {
+                        best[participant.name] = participant
+                    }
+                } else {
+                    best[participant.name] = participant
+                }
+            }
+        }
+        return best.values.sorted { $0.percentUsed > $1.percentUsed }
     }
 
     // MARK: - Cost Data Resolution
 
-    /// Enterprise accounts report utilization via ClaudeUsage.effectiveSessionPercentage
-    /// (the `utilization` field from the extra_usage API block — already a percentage, 0–100).
-    /// This is the authoritative race metric — use it directly rather than deriving from
-    /// cost amounts, which can diverge from utilization.
-    ///
-    /// We encode it as basis points out of 10000 so the server computes the correct
-    /// percentage: e.g. 42.3% → cost_used=4230, cost_limit=10000.
-    ///
-    /// Fallback: console APIUsage credits (non-enterprise accounts).
     private func resolveCostData() -> (usedCents: Int, limitCents: Int)? {
         let profile = ProfileManager.shared.activeProfile
 
-        // Primary: enterprise monthly spend.
-        // used_credits / monthly_limit from the extra_usage API block are already in cents.
+        // Primary: enterprise monthly spend (used_credits already in cents)
         if profile?.connectionType == .enterprise,
            let usage = profile?.claudeUsage,
            let costUsed = usage.costUsed,
