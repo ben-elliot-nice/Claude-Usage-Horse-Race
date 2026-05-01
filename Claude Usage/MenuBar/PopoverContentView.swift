@@ -53,6 +53,13 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
 }
 
+// MARK: - Popover Tab
+
+enum PopoverTab: String {
+    case usage
+    case race
+}
+
 /// Native macOS popover interface - minimal, flat, system-style
 struct PopoverContentView: View {
     @ObservedObject var manager: MenuBarManager
@@ -60,7 +67,10 @@ struct PopoverContentView: View {
     let onPreferences: () -> Void
 
     @State private var isRefreshing = false
-    @State private var showInsights = false
+    @State private var selectedTab: PopoverTab = {
+        let raw = UserDefaults.standard.string(forKey: "popoverSelectedTab") ?? "usage"
+        return PopoverTab(rawValue: raw) ?? .usage
+    }()
     @StateObject private var profileManager = ProfileManager.shared
 
     private func profileInitials(for name: String) -> String {
@@ -89,20 +99,16 @@ struct PopoverContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
+            // Header (profile switcher + refresh + settings) — always visible
             SmartHeader(
                 usage: displayUsage,
                 status: manager.status,
                 isRefreshing: isRefreshing,
                 onRefresh: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isRefreshing = true
-                    }
+                    withAnimation(.easeInOut(duration: 0.3)) { isRefreshing = true }
                     onRefresh()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isRefreshing = false
-                        }
+                        withAnimation(.easeInOut(duration: 0.3)) { isRefreshing = false }
                     }
                 },
                 onManageProfiles: onPreferences,
@@ -112,95 +118,84 @@ struct PopoverContentView: View {
 
             PopoverDivider()
 
-            // Error / stale data banners
-            if manager.hasCredentialError {
-                StatusBannerView(
-                    icon: "exclamationmark.triangle.fill",
-                    message: "popover.banner.credentials_expired".localized,
-                    color: .orange
-                ) {
-                    onPreferences()
-                }
-            } else if manager.consecutiveRefreshFailures >= 3 {
-                StatusBannerView(
-                    icon: "arrow.clockwise.circle.fill",
-                    message: String(format: "popover.banner.refresh_failed".localized, manager.consecutiveRefreshFailures),
-                    color: .yellow
-                ) {
-                    onRefresh()
-                }
-            } else if let lastRefresh = manager.lastSuccessfulRefreshTime,
-                      Date().timeIntervalSince(lastRefresh) > 300 {
-                let minutesAgo = Int(Date().timeIntervalSince(lastRefresh) / 60)
-                StatusBannerView(
-                    icon: "clock.fill",
-                    message: String(format: "popover.banner.updated_ago".localized, minutesAgo),
-                    color: .orange
-                ) {
-                    onRefresh()
-                }
-            }
+            // Tab bar
+            PopoverTabBar(selectedTab: $selectedTab)
 
-            // Viewing usage tag (shown in multi-profile mode)
-            if profileManager.displayMode == .multi,
-               let viewingProfile = manager.clickedProfileId.flatMap({ id in
-                   profileManager.profiles.first(where: { $0.id == id })
-               }) ?? profileManager.activeProfile {
-                HStack(spacing: 8) {
-                    // Profile initials avatar
-                    ZStack {
-                        Circle()
-                            .fill(Color.accentColor.opacity(0.15))
-                            .frame(width: 20, height: 20)
+            PopoverDivider()
 
-                        Text(profileInitials(for: viewingProfile.name))
-                            .font(.system(size: 8, weight: .bold, design: .rounded))
-                            .foregroundColor(.accentColor)
+            // Tab content
+            switch selectedTab {
+            case .usage:
+                // Error / stale banners
+                if manager.hasCredentialError {
+                    StatusBannerView(
+                        icon: "exclamationmark.triangle.fill",
+                        message: "popover.banner.credentials_expired".localized,
+                        color: .orange
+                    ) { onPreferences() }
+                } else if manager.consecutiveRefreshFailures >= 3 {
+                    StatusBannerView(
+                        icon: "arrow.clockwise.circle.fill",
+                        message: String(format: "popover.banner.refresh_failed".localized, manager.consecutiveRefreshFailures),
+                        color: .yellow
+                    ) { onRefresh() }
+                } else if let lastRefresh = manager.lastSuccessfulRefreshTime,
+                          Date().timeIntervalSince(lastRefresh) > 300 {
+                    let minutesAgo = Int(Date().timeIntervalSince(lastRefresh) / 60)
+                    StatusBannerView(
+                        icon: "clock.fill",
+                        message: String(format: "popover.banner.updated_ago".localized, minutesAgo),
+                        color: .orange
+                    ) { onRefresh() }
+                }
+
+                // Profile tag (multi-profile mode)
+                if profileManager.displayMode == .multi,
+                   let viewingProfile = manager.clickedProfileId.flatMap({ id in
+                       profileManager.profiles.first(where: { $0.id == id })
+                   }) ?? profileManager.activeProfile {
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.15))
+                                .frame(width: 20, height: 20)
+                            Text(profileInitials(for: viewingProfile.name))
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundColor(.accentColor)
+                        }
+                        Text(viewingProfile.name)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        Spacer()
+                        if viewingProfile.id == profileManager.activeProfile?.id {
+                            Text("Active")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+                        }
                     }
-
-                    Text(viewingProfile.name)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    if viewingProfile.id == profileManager.activeProfile?.id {
-                        Text("Active")
-                            .font(.system(size: 8, weight: .semibold))
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.accentColor.opacity(0.12))
-                            )
-                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.03)))
+                    .padding(.horizontal, 10)
+                    .padding(.top, 6)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.primary.opacity(0.03))
-                )
-                .padding(.horizontal, 10)
-                .padding(.top, 6)
+
+                SmartUsageDashboard(usage: displayUsage, apiUsage: displayAPIUsage)
+
+            case .race:
+                RaceTabView(onOpenSettings: onPreferences)
             }
-
-            // Usage
-            SmartUsageDashboard(usage: displayUsage, apiUsage: displayAPIUsage)
-
-            // Contextual Insights
-            if showInsights {
-                PopoverDivider()
-                ContextualInsights(usage: displayUsage)
-                    .transition(.opacity)
-            }
-
         }
         .padding(.bottom, 8)
         .frame(width: 280)
         .background(VisualEffectBackground())
+        .onChange(of: selectedTab) { _, newTab in
+            UserDefaults.standard.set(newTab.rawValue, forKey: "popoverSelectedTab")
+        }
     }
 }
 
@@ -210,6 +205,45 @@ struct PopoverDivider: View {
     var body: some View {
         Divider()
             .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - Popover Tab Bar
+
+struct PopoverTabBar: View {
+    @Binding var selectedTab: PopoverTab
+
+    var body: some View {
+        HStack(spacing: 0) {
+            tabButton(label: "Usage", systemImage: "chart.bar.fill", tab: .usage)
+            tabButton(label: "Race", systemImage: "flag.checkered", tab: .race)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+    }
+
+    private func tabButton(label: String, systemImage: String, tab: PopoverTab) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedTab = tab
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 10, weight: .medium))
+                Text(tab == .race ? "🏇 \(label)" : label)
+                    .font(.system(size: 11, weight: selectedTab == tab ? .semibold : .regular))
+            }
+            .foregroundColor(selectedTab == tab ? .primary : .secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(selectedTab == tab ? Color.primary.opacity(0.08) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -904,28 +938,6 @@ struct Insight {
     let color: Color
     let title: String
     let description: String
-}
-
-// MARK: - Smart Footer
-struct SmartFooter: View {
-    let usage: ClaudeUsage
-    let status: ClaudeStatus
-    @Binding var showInsights: Bool
-    let onPreferences: () -> Void
-
-    var body: some View {
-        HStack {
-            Spacer()
-            SmartActionButton(
-                icon: "gearshape.fill",
-                title: "common.settings".localized,
-                action: onPreferences
-            )
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-    }
 }
 
 // MARK: - Claude Status Row
