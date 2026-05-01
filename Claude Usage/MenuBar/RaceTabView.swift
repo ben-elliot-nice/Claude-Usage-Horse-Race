@@ -5,12 +5,13 @@ import SwiftUI
 /// Three states: not configured, live standings, error.
 struct RaceTabView: View {
     @ObservedObject private var raceService = RaceService.shared
+    @StateObject private var profileManager = ProfileManager.shared
     let onOpenSettings: () -> Void
     @State private var showDetail = false
 
     var body: some View {
         Group {
-            if ProfileManager.shared.activeProfile?.connectionType != .enterprise {
+            if profileManager.activeProfile?.connectionType != .enterprise {
                 enterpriseRequiredView
             } else if !RaceSettings.shared.raceEnabled || RaceSettings.shared.raceURL == nil {
                 notConfiguredView

@@ -184,7 +184,18 @@ struct PopoverContentView: View {
                     .padding(.top, 6)
                 }
 
-                SmartUsageDashboard(usage: displayUsage, apiUsage: displayAPIUsage)
+                SmartUsageDashboard(
+                    usage: displayUsage,
+                    apiUsage: displayAPIUsage,
+                    isEnterprise: {
+                        if profileManager.displayMode == .multi,
+                           let id = manager.clickedProfileId,
+                           let profile = profileManager.profiles.first(where: { $0.id == id }) {
+                            return profile.connectionType == .enterprise
+                        }
+                        return profileManager.activeProfile?.connectionType == .enterprise
+                    }()
+                )
 
             case .race:
                 RaceTabView(onOpenSettings: onPreferences)
@@ -578,6 +589,7 @@ struct HeaderIconButton: View {
 struct SmartUsageDashboard: View {
     let usage: ClaudeUsage
     let apiUsage: APIUsage?
+    var isEnterprise: Bool = false
     @StateObject private var profileManager = ProfileManager.shared
     @ObservedObject private var peakHoursService = PeakHoursService.shared
 
@@ -615,13 +627,6 @@ struct SmartUsageDashboard: View {
 
     private var timeDisplay: PopoverTimeDisplay {
         SharedDataStore.shared.loadPopoverTimeDisplay()
-    }
-
-    private var isEnterprise: Bool {
-        if profileManager.displayMode == .multi {
-            return false
-        }
-        return profileManager.activeProfile?.connectionType == .enterprise
     }
 
     var body: some View {
