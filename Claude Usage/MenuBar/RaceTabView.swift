@@ -158,7 +158,7 @@ struct HorseTrackRow: View {
             // Name label (fixed width, right-aligned)
             Text(participant.name)
                 .font(.system(size: 10, weight: isYou ? .bold : .medium))
-                .foregroundColor(participant.isStale ? .secondary.opacity(0.3) : (isYou ? .primary : .secondary))
+                .foregroundColor(participant.isStale ? .secondary.opacity(0.25) : (isYou ? .primary : .secondary))
                 .frame(width: 42, alignment: .trailing)
                 .lineLimit(1)
 
