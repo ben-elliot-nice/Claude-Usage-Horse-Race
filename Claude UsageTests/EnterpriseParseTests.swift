@@ -22,12 +22,12 @@ final class EnterpriseParseTests: XCTestCase {
             "is_enabled": true,
             "monthly_limit": 100000,
             "used_credits": 660.0,
-            "utilization": 0.0066,
+            "utilization": 0.66,   // API returns utilization as a percentage (0.66 = 0.66%)
             "currency": "USD"
         ])
         let usage = try service.parseEnterpriseResponse(data)
 
-        // utilization is 0.0066 → multiply by 100 → 0.66%
+        // utilization is already a percentage — 0.66 means 0.66%
         XCTAssertEqual(usage.sessionPercentage, 0.66, accuracy: 0.001)
         XCTAssertEqual(usage.costUsed, 660.0)
         XCTAssertEqual(usage.costLimit, 100000.0)

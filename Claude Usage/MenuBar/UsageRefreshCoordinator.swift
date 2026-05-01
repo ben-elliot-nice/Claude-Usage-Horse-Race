@@ -58,8 +58,10 @@ final class UsageRefreshCoordinator {
 
         if profile?.connectionType == .enterprise,
            let claudeService = apiService as? ClaudeAPIService,
-           let sessionKey = profile?.claudeSessionKey,
-           let orgId = profile?.organizationId {
+           let profileId = profile?.id,
+           let creds = try? ProfileStore.shared.loadProfileCredentials(profileId),
+           let sessionKey = creds.claudeSessionKey,
+           let orgId = creds.organizationId {
             return try await claudeService.fetchEnterpriseUsageData(sessionKey: sessionKey, organizationId: orgId)
         }
 

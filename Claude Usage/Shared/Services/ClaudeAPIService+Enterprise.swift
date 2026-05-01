@@ -6,8 +6,8 @@ import Foundation
 extension ClaudeAPIService {
 
     /// Fetches usage data for an enterprise claude.ai account.
-    /// Uses the same /usage endpoint as the standard flow but reads
-    /// the `extra_usage` block instead of `five_hour`/`seven_day`.
+    /// Reads credentials from ProfileStore (Keychain) — the same place the
+    /// Enterprise wizard saves them — bypassing the CLI OAuth fallback chain.
     func fetchEnterpriseUsageData(sessionKey: String, organizationId: String) async throws -> ClaudeUsage {
         let data = try await performRequest(
             endpoint: "/organizations/\(organizationId)/usage",
@@ -41,8 +41,9 @@ extension ClaudeAPIService {
             )
         }
 
-        // utilization is 0.0–1.0 from the API; convert to 0–100 percentage
-        let utilization = (extraUsage["utilization"] as? Double ?? 0.0) * 100.0
+        // utilization is already a percentage (0–100) in the API response,
+        // e.g. 0.66 means 0.66% (not 66%). Do NOT multiply by 100.
+        let utilization = extraUsage["utilization"] as? Double ?? 0.0
         let usedCredits = extraUsage["used_credits"] as? Double ?? 0.0
         let monthlyLimit = extraUsage["monthly_limit"] as? Double ?? 0.0
         let currency = extraUsage["currency"] as? String ?? "USD"
