@@ -5,19 +5,55 @@ import SwiftUI
 /// Three states: not configured, live standings, error.
 struct RaceTabView: View {
     @ObservedObject private var raceService = RaceService.shared
+    @StateObject private var profileManager = ProfileManager.shared
     let onOpenSettings: () -> Void
     @State private var showDetail = false
 
     var body: some View {
         Group {
-            if !RaceSettings.shared.raceEnabled || RaceSettings.shared.raceURL == nil {
+            if profileManager.activeProfile?.connectionType != .enterprise {
+                enterpriseRequiredView
+            } else if !RaceSettings.shared.raceEnabled || RaceSettings.shared.raceEntries.isEmpty {
                 notConfiguredView
-            } else if let error = raceService.lastError, raceService.standings == nil {
+            } else if let error = raceService.lastError, raceService.compiledStandings.isEmpty {
                 errorView(message: error)
             } else {
                 liveView
             }
         }
+    }
+
+    // MARK: - Enterprise Required
+
+    private var enterpriseRequiredView: some View {
+        VStack(spacing: 12) {
+            Text("🏢")
+                .font(.system(size: 32))
+
+            Text("Enterprise account required.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary)
+
+            Text("Connect an Enterprise Account in\nSettings to join a race.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+
+            Button("Open Settings", action: onOpenSettings)
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.accentColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
+                )
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 14)
     }
 
     // MARK: - Not Configured
@@ -114,7 +150,8 @@ struct RaceTabView: View {
             .padding(.bottom, 6)
 
             // Track lanes / detail list
-            if let participants = raceService.standings?.participants, !participants.isEmpty {
+            if !raceService.compiledStandings.isEmpty {
+                let participants = raceService.compiledStandings
                 if showDetail {
                     // Detail list
                     VStack(spacing: 2) {
@@ -185,12 +222,15 @@ struct RaceTabView: View {
     }
 
     private var raceSlugDisplay: String {
-        guard let url = RaceSettings.shared.raceURL,
-              let last = URL(string: url)?.lastPathComponent,
-              !last.isEmpty else {
-            return raceService.standings?.raceSlug ?? "RACE"
+        let entries = RaceSettings.shared.raceEntries
+        if entries.count == 1 {
+            return entries[0].name
+                ?? URL(string: entries[0].url)?.lastPathComponent
+                ?? "RACE"
+        } else if entries.count > 1 {
+            return "\(entries.count) races"
         }
-        return last
+        return "RACE"
     }
 
     private func relativeTime(from date: Date) -> String {

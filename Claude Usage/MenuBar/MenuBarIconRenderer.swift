@@ -23,7 +23,8 @@ final class MenuBarIconRenderer {
         colorMode: MenuBarColorMode,
         singleColorHex: String,
         showIconName: Bool,
-        showNextSessionTime: Bool
+        showNextSessionTime: Bool,
+        isEnterprise: Bool = false
     ) -> NSImage {
         // Get the metric value and percentage
         let metricData = getMetricData(
@@ -87,7 +88,8 @@ final class MenuBarIconRenderer {
                 usage: usage,
                 timeMarkerFraction: timeMarkerFraction,
                 paceStatus: paceStatus,
-                showPaceMarker: showPaceMarker
+                showPaceMarker: showPaceMarker,
+                isEnterprise: isEnterprise
             )
         case .progressBar:
             return createProgressBarStyle(
@@ -270,7 +272,8 @@ final class MenuBarIconRenderer {
         usage: ClaudeUsage,
         timeMarkerFraction: CGFloat? = nil,
         paceStatus: PaceStatus? = nil,
-        showPaceMarker: Bool = false
+        showPaceMarker: Bool = false,
+        isEnterprise: Bool = false
     ) -> NSImage {
         let percentage = CGFloat(metricData.percentage) / 100.0
 
@@ -351,8 +354,8 @@ final class MenuBarIconRenderer {
                 text = resetTime.timeRemainingHoursString() as NSString
             }
         } else if showIconName {
-            // Show full word: "Session" or "Week"
-            text = (metricType == .session ? "Session" : "Week") as NSString
+            // Show full word: "M. Quota" (enterprise), "Session", or "Week"
+            text = (metricType == .session ? (isEnterprise ? "M. Quota" : "Session") : "Week") as NSString
         } else {
             // No label mode - show percentage instead
             text = "\(Int(metricData.percentage))%" as NSString

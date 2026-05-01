@@ -1136,6 +1136,16 @@ class MenuBarManager: NSObject, ObservableObject {
 
     /// Fetches usage data for a specific profile using its credentials
     private func fetchUsageForProfile(_ profile: Profile) async throws -> ClaudeUsage {
+        // Enterprise accounts: parse extra_usage block instead of five_hour/seven_day
+        if profile.connectionType == .enterprise,
+           let claudeService = apiService as? ClaudeAPIService,
+           let creds = try? ProfileStore.shared.loadProfileCredentials(profile.id),
+           let sessionKey = creds.claudeSessionKey,
+           let orgId = creds.organizationId {
+            LoggingService.shared.log("MenuBarManager: using enterprise fetch for '\(profile.name)'")
+            return try await claudeService.fetchEnterpriseUsageData(sessionKey: sessionKey, organizationId: orgId)
+        }
+
         // Priority 1: claude.ai session key (cookie-based)
         if let sessionKey = profile.claudeSessionKey,
            let orgId = profile.organizationId {
@@ -1242,7 +1252,7 @@ class MenuBarManager: NSObject, ObservableObject {
             let currentProfileId = await MainActor.run { self.profileManager.activeProfile?.id }
 
             // Fetch usage and status in parallel
-            async let usageResult = apiService.fetchUsageData()
+            async let usageResult = self.fetchUsageForProfile(profile)
             async let statusResult = statusService.fetchStatus()
 
             var usageSuccess = false

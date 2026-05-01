@@ -55,5 +55,12 @@ struct RaceParticipant: Codable, Identifiable {
 /// The full standings response from GET {raceUrl}/standings
 struct RaceStandings: Codable {
     let raceSlug: String
+    let name: String?
     let participants: [RaceParticipant]
+}
+
+/// Response from POST {serverBaseURL}/races
+struct CreateRaceResponse: Decodable {
+    let slug: String
+    let name: String
 }

@@ -184,7 +184,18 @@ struct PopoverContentView: View {
                     .padding(.top, 6)
                 }
 
-                SmartUsageDashboard(usage: displayUsage, apiUsage: displayAPIUsage)
+                SmartUsageDashboard(
+                    usage: displayUsage,
+                    apiUsage: displayAPIUsage,
+                    isEnterprise: {
+                        if profileManager.displayMode == .multi,
+                           let id = manager.clickedProfileId,
+                           let profile = profileManager.profiles.first(where: { $0.id == id }) {
+                            return profile.connectionType == .enterprise
+                        }
+                        return profileManager.activeProfile?.connectionType == .enterprise
+                    }()
+                )
 
             case .race:
                 RaceTabView(onOpenSettings: onPreferences)
@@ -578,6 +589,7 @@ struct HeaderIconButton: View {
 struct SmartUsageDashboard: View {
     let usage: ClaudeUsage
     let apiUsage: APIUsage?
+    var isEnterprise: Bool = false
     @StateObject private var profileManager = ProfileManager.shared
     @ObservedObject private var peakHoursService = PeakHoursService.shared
 
@@ -619,62 +631,64 @@ struct SmartUsageDashboard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Primary: Session Usage
+            // Primary: Session Usage (or Monthly Spend for enterprise)
             UsageRow(
-                title: "menubar.session_usage".localized,
-                subtitle: "menubar.5_hour_window".localized,
+                title: isEnterprise ? "Monthly Spend" : "menubar.session_usage".localized,
+                subtitle: isEnterprise ? nil : "menubar.5_hour_window".localized,
                 usedPercentage: usage.effectiveSessionPercentage,
                 showRemaining: showRemainingPercentage,
-                resetTime: usage.sessionResetTime,
-                periodDuration: Constants.sessionWindow,
-                showTimeMarker: showTimeMarker,
-                showPaceMarker: showPaceMarker,
-                usePaceColoring: usePaceColoring,
+                resetTime: isEnterprise ? nil : usage.sessionResetTime,
+                periodDuration: isEnterprise ? nil : Constants.sessionWindow,
+                showTimeMarker: isEnterprise ? false : showTimeMarker,
+                showPaceMarker: isEnterprise ? false : showPaceMarker,
+                usePaceColoring: isEnterprise ? false : usePaceColoring,
                 timeDisplay: timeDisplay,
                 isPeakHighlighted: isPeakHours
             )
 
-            // All Models (Weekly)
-            UsageRow(
-                title: "menubar.all_models".localized,
-                tag: "menubar.weekly".localized,
-                subtitle: nil,
-                usedPercentage: usage.weeklyPercentage,
-                showRemaining: showRemainingPercentage,
-                resetTime: usage.weeklyResetTime,
-                periodDuration: Constants.weeklyWindow,
-                showTimeMarker: showTimeMarker,
-                showPaceMarker: showPaceMarker,
-                usePaceColoring: usePaceColoring,
-                timeDisplay: timeDisplay
-            )
-
-            if usage.opusWeeklyTokensUsed > 0 {
+            if !isEnterprise {
+                // All Models (Weekly)
                 UsageRow(
-                    title: "menubar.opus_usage".localized,
+                    title: "menubar.all_models".localized,
                     tag: "menubar.weekly".localized,
                     subtitle: nil,
-                    usedPercentage: usage.opusWeeklyPercentage,
+                    usedPercentage: usage.weeklyPercentage,
                     showRemaining: showRemainingPercentage,
-                    resetTime: nil,
-                    periodDuration: nil
-                )
-            }
-
-            if usage.sonnetWeeklyTokensUsed > 0 {
-                UsageRow(
-                    title: "menubar.sonnet_usage".localized,
-                    subtitle: nil,
-                    usedPercentage: usage.sonnetWeeklyPercentage,
-                    showRemaining: showRemainingPercentage,
-                    resetTime: usage.sonnetWeeklyResetTime,
-                    periodDuration: nil,
+                    resetTime: usage.weeklyResetTime,
+                    periodDuration: Constants.weeklyWindow,
+                    showTimeMarker: showTimeMarker,
+                    showPaceMarker: showPaceMarker,
+                    usePaceColoring: usePaceColoring,
                     timeDisplay: timeDisplay
                 )
+
+                if usage.opusWeeklyTokensUsed > 0 {
+                    UsageRow(
+                        title: "menubar.opus_usage".localized,
+                        tag: "menubar.weekly".localized,
+                        subtitle: nil,
+                        usedPercentage: usage.opusWeeklyPercentage,
+                        showRemaining: showRemainingPercentage,
+                        resetTime: nil,
+                        periodDuration: nil
+                    )
+                }
+
+                if usage.sonnetWeeklyTokensUsed > 0 {
+                    UsageRow(
+                        title: "menubar.sonnet_usage".localized,
+                        subtitle: nil,
+                        usedPercentage: usage.sonnetWeeklyPercentage,
+                        showRemaining: showRemainingPercentage,
+                        resetTime: usage.sonnetWeeklyResetTime,
+                        periodDuration: nil,
+                        timeDisplay: timeDisplay
+                    )
+                }
             }
 
-            // Extra usage (cost-based)
-            if let used = usage.costUsed, let limit = usage.costLimit, let currency = usage.costCurrency, limit > 0 {
+            // Extra usage (cost-based) — hidden for enterprise (shown as Monthly Spend instead)
+            if !isEnterprise, let used = usage.costUsed, let limit = usage.costLimit, let currency = usage.costCurrency, limit > 0 {
                 let usedPercentage = (used / limit) * 100.0
                 UsageRow(
                     title: "menubar.extra_usage".localized,

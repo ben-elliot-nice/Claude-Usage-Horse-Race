@@ -5,7 +5,7 @@ class ClaudeAPIService: APIServiceProtocol {
     // MARK: - Types
 
     /// Authentication method for API requests
-    private enum AuthenticationType {
+    enum AuthenticationType {
         case claudeAISession(String)      // Cookie: sessionKey=...
         case cliOAuth(String)              // Authorization: Bearer ... (with anthropic-beta header)
         case consoleAPISession(String)     // Cookie: sessionKey=... (different endpoint)
@@ -73,7 +73,8 @@ class ClaudeAPIService: APIServiceProtocol {
     /// Gets the best available authentication method with fallback support
     /// Priority: 1) claude.ai session → 2) saved CLI OAuth → 3) system Keychain CLI OAuth
     /// Note: Console API session is NOT used as fallback (it only provides billing data, not usage)
-    private func getAuthentication() throws -> AuthenticationType {
+    /// Internal so ClaudeAPIService+Enterprise.swift can call it.
+    func getAuthentication() throws -> AuthenticationType {
         guard let activeProfile = ProfileManager.shared.activeProfile else {
             LoggingService.shared.logError("ClaudeAPIService.getAuthentication: No active profile")
             throw AppError.sessionKeyNotFound()
@@ -583,7 +584,7 @@ class ClaudeAPIService: APIServiceProtocol {
         }
     }
 
-    private func performRequest(endpoint: String, sessionKey: String) async throws -> Data {
+    func performRequest(endpoint: String, sessionKey: String) async throws -> Data {
         // Build URL safely
         let url = try URLBuilder(baseURL: baseURL)
             .appendingPath(endpoint)
