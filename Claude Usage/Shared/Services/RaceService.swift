@@ -180,22 +180,25 @@ final class RaceService: ObservableObject {
 
     // MARK: - Cost Data Resolution
 
-    /// Primary: APIUsage.currentSpendCents / (currentSpendCents + prepaidCreditsCents)
-    /// Fallback: ClaudeUsage.costUsed / costLimit
+    /// Enterprise accounts (connectionType == .enterprise) store monthly spend in
+    /// ClaudeUsage.costUsed / costLimit (parsed from the extra_usage API block).
+    /// Console/API accounts fall back to APIUsage.currentSpendCents.
     private func resolveCostData() -> (usedCents: Int, limitCents: Int)? {
         let profile = ProfileManager.shared.activeProfile
 
-        if let api = profile?.apiUsage {
-            let used = api.currentSpendCents
-            let limit = api.currentSpendCents + api.prepaidCreditsCents
-            if limit > 0 { return (used, limit) }
-        }
-
+        // Primary: enterprise monthly spend via ClaudeUsage extra_usage
         if let usage = profile?.claudeUsage,
            let costUsed = usage.costUsed,
            let costLimit = usage.costLimit,
            costLimit > 0 {
             return (Int(costUsed), Int(costLimit))
+        }
+
+        // Fallback: console API credits
+        if let api = profile?.apiUsage {
+            let used = api.currentSpendCents
+            let limit = api.currentSpendCents + api.prepaidCreditsCents
+            if limit > 0 { return (used, limit) }
         }
 
         return nil
