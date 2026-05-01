@@ -24,7 +24,7 @@ final class ConnectionTypeTests: XCTestCase {
         }
     }
 
-    func testUnknownRawValueDecodesAsClaudeAI() throws {
+    func testUnknownRawValueThrows() throws {
         XCTAssertThrowsError(
             try JSONDecoder().decode(ConnectionType.self,
                                      from: Data("\"unknownFutureCase\"".utf8))
