@@ -649,7 +649,8 @@ final class StatusBarUIManager {
                 colorMode: config.colorMode,
                 singleColorHex: config.singleColorHex,
                 showIconName: config.showIconNames,
-                showNextSessionTime: metricConfig.showNextSessionTime
+                showNextSessionTime: metricConfig.showNextSessionTime,
+                isEnterprise: profile?.connectionType == .enterprise
             )
 
             image.isTemplate = config.colorMode == .monochrome && !config.showPaceMarker
@@ -688,7 +689,8 @@ final class StatusBarUIManager {
             colorMode: config.colorMode,
             singleColorHex: config.singleColorHex,
             showIconName: config.showIconNames,
-            showNextSessionTime: metricConfig.showNextSessionTime
+            showNextSessionTime: metricConfig.showNextSessionTime,
+            isEnterprise: ProfileManager.shared.activeProfile?.connectionType == .enterprise
         )
 
         image.isTemplate = config.colorMode == .monochrome && !config.showPaceMarker
