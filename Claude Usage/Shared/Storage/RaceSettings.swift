@@ -14,6 +14,8 @@ final class RaceSettings {
         static let pushInterval      = "racePushInterval"
         static let pollInterval      = "racePollInterval"
         static let participantID     = "raceParticipantID"
+        static let serverBaseURL     = "raceServerBaseURL"
+        static let raceName          = "raceCurrentRaceName"
     }
 
     // MARK: - Race Enabled
@@ -60,6 +62,23 @@ final class RaceSettings {
             return v > 0 ? v : 30.0
         }
         set { defaults.set(newValue, forKey: Keys.pollInterval) }
+    }
+
+    // MARK: - Server Base URL
+
+    /// Root URL of the race server, e.g. "https://claude-usage-horse-race-staging.up.railway.app"
+    /// Stored separately from raceURL so it persists when switching races.
+    var serverBaseURL: String? {
+        get { defaults.string(forKey: Keys.serverBaseURL).flatMap { $0.isEmpty ? nil : $0 } }
+        set { defaults.set(newValue ?? "", forKey: Keys.serverBaseURL) }
+    }
+
+    // MARK: - Current Race Name
+
+    /// Display name of the currently joined race, returned by the server on creation/join.
+    var raceName: String? {
+        get { defaults.string(forKey: Keys.raceName).flatMap { $0.isEmpty ? nil : $0 } }
+        set { defaults.set(newValue ?? "", forKey: Keys.raceName) }
     }
 
     // MARK: - Participant Identity (private UUID, generated once, never changes)

@@ -7,7 +7,8 @@ final class RaceSettingsTests: XCTestCase {
         super.setUp()
         // Clear all race keys before each test
         let keys = ["raceEnabled", "raceURL", "raceParticipantName",
-                    "racePushInterval", "racePollInterval", "raceParticipantID"]
+                    "racePushInterval", "racePollInterval", "raceParticipantID",
+                    "raceServerBaseURL", "raceCurrentRaceName"]
         keys.forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
@@ -55,5 +56,28 @@ final class RaceSettingsTests: XCTestCase {
         let id2 = RaceSettings.shared.participantID
         XCTAssertNotNil(UUID(uuidString: id1))
         XCTAssertEqual(id1, id2)
+    }
+
+    func testServerBaseURL_defaultsNil() {
+        XCTAssertNil(RaceSettings.shared.serverBaseURL)
+    }
+
+    func testServerBaseURL_saveAndLoad() {
+        RaceSettings.shared.serverBaseURL = "https://example.com"
+        XCTAssertEqual(RaceSettings.shared.serverBaseURL, "https://example.com")
+    }
+
+    func testServerBaseURL_emptyStringBecomesNil() {
+        RaceSettings.shared.serverBaseURL = ""
+        XCTAssertNil(RaceSettings.shared.serverBaseURL)
+    }
+
+    func testRaceName_defaultsNil() {
+        XCTAssertNil(RaceSettings.shared.raceName)
+    }
+
+    func testRaceName_saveAndLoad() {
+        RaceSettings.shared.raceName = "NICE Team Sprint"
+        XCTAssertEqual(RaceSettings.shared.raceName, "NICE Team Sprint")
     }
 }
