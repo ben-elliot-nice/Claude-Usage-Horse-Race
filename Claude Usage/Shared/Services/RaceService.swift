@@ -58,6 +58,43 @@ final class RaceService: ObservableObject {
         Task { await poll() }
     }
 
+    // MARK: - Race Creation
+
+    /// Creates a new race on the server.
+    /// On success, stores the full raceURL and raceName in RaceSettings, calls restart().
+    /// Throws RaceCreationError on failure.
+    func createRace(name: String) async throws -> String {
+        guard let base = RaceSettings.shared.serverBaseURL,
+              let serverURL = URL(string: base) else {
+            throw RaceCreationError.noServerURL
+        }
+
+        let endpoint = serverURL.appendingPathComponent("races")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["name": name])
+        request.timeoutInterval = 15
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let http = response as? HTTPURLResponse else {
+            throw RaceCreationError.badResponse
+        }
+        guard http.statusCode == 201 else {
+            throw RaceCreationError.serverError(http.statusCode)
+        }
+
+        let decoded = try decoder.decode(CreateRaceResponse.self, from: data)
+        let raceURL = "\(base)/races/\(decoded.slug)"
+
+        RaceSettings.shared.raceURL = raceURL
+        RaceSettings.shared.raceName = decoded.name
+        restart()
+
+        return raceURL
+    }
+
     // MARK: - Registration
 
     func register() async {
@@ -210,5 +247,19 @@ final class RaceService: ObservableObject {
         }
 
         return nil
+    }
+}
+
+enum RaceCreationError: LocalizedError {
+    case noServerURL
+    case badResponse
+    case serverError(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .noServerURL:           return "No server URL configured."
+        case .badResponse:           return "Unexpected response from server."
+        case .serverError(let code): return "Server returned HTTP \(code)."
+        }
     }
 }
