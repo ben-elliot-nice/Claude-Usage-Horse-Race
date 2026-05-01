@@ -22,13 +22,18 @@ struct RaceParticipant: Codable, Identifiable {
     }
 
     /// Human-readable cost, e.g. "$615"
+    private static let costFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "USD"
+        f.locale = Locale(identifier: "en_US")
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 0
+        return f
+    }()
+
     var formattedCostUsed: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: Double(costUsedCents) / 100.0)) ?? "$?"
+        Self.costFormatter.string(from: NSNumber(value: Double(costUsedCents) / 100.0)) ?? "$?"
     }
 
     /// "2m ago" style relative time string.

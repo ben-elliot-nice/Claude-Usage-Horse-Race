@@ -53,7 +53,28 @@ final class RaceParticipantTests: XCTestCase {
             updatedAt: Date()
         )
         // $615
-        XCTAssertTrue(p.formattedCostUsed.contains("615"))
+        XCTAssertEqual(p.formattedCostUsed, "$615")
+    }
+
+    func testUpdatedAgoString_minutes() {
+        let twoMinsAgo = Date().addingTimeInterval(-120)
+        let p = RaceParticipant(
+            name: "Alice",
+            costUsedCents: 100,
+            costLimitCents: 100000,
+            updatedAt: twoMinsAgo
+        )
+        XCTAssertEqual(p.updatedAgoString, "2m ago")
+    }
+
+    func testUpdatedAgoString_justNow() {
+        let p = RaceParticipant(
+            name: "Alice",
+            costUsedCents: 100,
+            costLimitCents: 100000,
+            updatedAt: Date()
+        )
+        XCTAssertEqual(p.updatedAgoString, "just now")
     }
 
     func testRaceStandings_decodable() throws {
