@@ -2,9 +2,10 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from redis import Redis
 
-from .dependencies import close_redis, init_redis
+from .dependencies import close_redis, get_redis, init_redis
 from .routes import router
 
 
@@ -20,5 +21,6 @@ app.include_router(router)
 
 
 @app.get("/health")
-def health():
+def health(r: Redis = Depends(get_redis)):
+    r.ping()
     return {"status": "ok"}
