@@ -6,11 +6,23 @@ import Foundation
 extension ClaudeAPIService {
 
     /// Fetches usage data for an enterprise claude.ai account.
-    /// Uses the same /usage endpoint as the standard flow but reads
-    /// the `extra_usage` block instead of `five_hour`/`seven_day`.
-    func fetchEnterpriseUsageData(sessionKey: String, organizationId: String) async throws -> ClaudeUsage {
+    /// Reuses the existing getAuthentication() + fetchOrganizationId() path
+    /// so credential storage/keychain handling is identical to the standard flow.
+    func fetchEnterpriseUsageData() async throws -> ClaudeUsage {
+        let auth = try getAuthentication()
+
+        guard case .claudeAISession(let sessionKey) = auth else {
+            throw AppError(
+                code: .sessionKeyNotFound,
+                message: "Enterprise account requires a claude.ai session key",
+                isRecoverable: true,
+                recoverySuggestion: "Set up your Enterprise Account credentials in Settings"
+            )
+        }
+
+        let orgId = try await fetchOrganizationId(sessionKey: sessionKey)
         let data = try await performRequest(
-            endpoint: "/organizations/\(organizationId)/usage",
+            endpoint: "/organizations/\(orgId)/usage",
             sessionKey: sessionKey
         )
         return try parseEnterpriseResponse(data)

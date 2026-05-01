@@ -57,10 +57,8 @@ final class UsageRefreshCoordinator {
         let profile = await MainActor.run { ProfileManager.shared.activeProfile }
 
         if profile?.connectionType == .enterprise,
-           let claudeService = apiService as? ClaudeAPIService,
-           let sessionKey = profile?.claudeSessionKey,
-           let orgId = profile?.organizationId {
-            return try await claudeService.fetchEnterpriseUsageData(sessionKey: sessionKey, organizationId: orgId)
+           let claudeService = apiService as? ClaudeAPIService {
+            return try await claudeService.fetchEnterpriseUsageData()
         }
 
         return try await apiService.fetchUsageData()
