@@ -58,7 +58,7 @@ extension ClaudeAPIService {
             weeklyTokensUsed: 0,
             weeklyLimit: 0,
             weeklyPercentage: 0.0,
-            weeklyResetTime: Date().nextMonday1259pm(),
+            weeklyResetTime: endOfCurrentMonth(),
             opusWeeklyTokensUsed: 0,
             opusWeeklyPercentage: 0.0,
             sonnetWeeklyTokensUsed: 0,
@@ -78,12 +78,11 @@ extension ClaudeAPIService {
 
     private func endOfCurrentMonth() -> Date {
         var calendar = Calendar.current
-        calendar.timeZone = TimeZone.current
         let now = Date()
         // Start of next month, minus 1 second = last second of current month
         var components = calendar.dateComponents([.year, .month], from: now)
-        components.month! += 1
-        let startOfNextMonth = calendar.date(from: components) ?? now.addingTimeInterval(30 * 24 * 3600)
+        components.month = (components.month ?? 1) + 1
+        let startOfNextMonth = calendar.date(from: components) ?? now.addingTimeInterval(32 * 24 * 3600)
         return startOfNextMonth.addingTimeInterval(-1)
     }
 }
