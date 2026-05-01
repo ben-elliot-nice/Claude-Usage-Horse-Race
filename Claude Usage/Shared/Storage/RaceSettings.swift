@@ -13,6 +13,7 @@ final class RaceSettings {
         static let participantName   = "raceParticipantName"
         static let pushInterval      = "racePushInterval"
         static let pollInterval      = "racePollInterval"
+        static let participantID     = "raceParticipantID"
     }
 
     // MARK: - Race Enabled
@@ -59,5 +60,15 @@ final class RaceSettings {
             return v > 0 ? v : 30.0
         }
         set { defaults.set(newValue, forKey: Keys.pollInterval) }
+    }
+
+    // MARK: - Participant Identity (private UUID, generated once, never changes)
+
+    var participantID: String {
+        let stored = defaults.string(forKey: Keys.participantID) ?? ""
+        if !stored.isEmpty { return stored }
+        let newID = UUID().uuidString
+        defaults.set(newID, forKey: Keys.participantID)
+        return newID
     }
 }
