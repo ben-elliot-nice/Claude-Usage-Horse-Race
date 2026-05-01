@@ -180,18 +180,23 @@ final class RaceService: ObservableObject {
 
     // MARK: - Cost Data Resolution
 
-    /// Enterprise accounts (connectionType == .enterprise) store monthly spend in
-    /// ClaudeUsage.costUsed / costLimit (parsed from the extra_usage API block).
-    /// Console/API accounts fall back to APIUsage.currentSpendCents.
+    /// Enterprise accounts report utilization via ClaudeUsage.effectiveSessionPercentage
+    /// (the `utilization` field from the extra_usage API block — already a percentage, 0–100).
+    /// This is the authoritative race metric — use it directly rather than deriving from
+    /// cost amounts, which can diverge from utilization.
+    ///
+    /// We encode it as basis points out of 10000 so the server computes the correct
+    /// percentage: e.g. 42.3% → cost_used=4230, cost_limit=10000.
+    ///
+    /// Fallback: console APIUsage credits (non-enterprise accounts).
     private func resolveCostData() -> (usedCents: Int, limitCents: Int)? {
         let profile = ProfileManager.shared.activeProfile
 
-        // Primary: enterprise monthly spend via ClaudeUsage extra_usage
-        if let usage = profile?.claudeUsage,
-           let costUsed = usage.costUsed,
-           let costLimit = usage.costLimit,
-           costLimit > 0 {
-            return (Int(costUsed), Int(costLimit))
+        // Primary: enterprise utilization (authoritative % from extra_usage API block)
+        if profile?.connectionType == .enterprise,
+           let usage = profile?.claudeUsage {
+            let basisPoints = Int(usage.effectiveSessionPercentage * 100)
+            return (usedCents: basisPoints, limitCents: 10000)
         }
 
         // Fallback: console API credits
