@@ -5,7 +5,7 @@ class ClaudeAPIService: APIServiceProtocol {
     // MARK: - Types
 
     /// Authentication method for API requests
-    private enum AuthenticationType {
+    enum AuthenticationType {
         case claudeAISession(String)      // Cookie: sessionKey=...
         case cliOAuth(String)              // Authorization: Bearer ... (with anthropic-beta header)
         case consoleAPISession(String)     // Cookie: sessionKey=... (different endpoint)
