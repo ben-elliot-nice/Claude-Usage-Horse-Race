@@ -205,7 +205,7 @@ struct HorseRaceSettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 if let name = currentRaceName {
                     HStack {
-                        Text("Name")
+                        Text("Race")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                         Spacer()
