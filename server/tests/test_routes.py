@@ -3,16 +3,17 @@ import fakeredis
 import pytest
 from fastapi.testclient import TestClient
 
-import app.dependencies as deps
+from app.dependencies import get_redis
 from app.main import app
 
 
 @pytest.fixture(autouse=True)
 def fake_redis():
-    """Inject fakeredis before each test, clean up after."""
-    deps._redis = fakeredis.FakeRedis()
+    """Override the get_redis dependency with fakeredis for every test."""
+    fake_r = fakeredis.FakeRedis()
+    app.dependency_overrides[get_redis] = lambda: fake_r
     yield
-    deps._redis = None
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

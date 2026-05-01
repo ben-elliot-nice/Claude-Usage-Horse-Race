@@ -10,9 +10,7 @@ from .routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from .dependencies import _redis as _existing
-    if _existing is None:
-        init_redis(os.environ.get("REDIS_URL"))
+    init_redis(os.environ.get("REDIS_URL"))
     yield
     close_redis()
 
