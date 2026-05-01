@@ -56,15 +56,20 @@ final class UsageRefreshCoordinator {
     private func fetchUsageForActiveProfile() async throws -> ClaudeUsage {
         let profile = await MainActor.run { ProfileManager.shared.activeProfile }
 
-        if profile?.connectionType == .enterprise,
+        let connectionType = profile?.connectionType ?? .claudeAI
+        LoggingService.shared.log("UsageRefreshCoordinator: connectionType=\(connectionType.rawValue) for profile '\(profile?.name ?? "nil")'")
+
+        if connectionType == .enterprise,
            let claudeService = apiService as? ClaudeAPIService,
            let profileId = profile?.id,
            let creds = try? ProfileStore.shared.loadProfileCredentials(profileId),
            let sessionKey = creds.claudeSessionKey,
            let orgId = creds.organizationId {
+            LoggingService.shared.log("UsageRefreshCoordinator: using enterprise fetch path")
             return try await claudeService.fetchEnterpriseUsageData(sessionKey: sessionKey, organizationId: orgId)
         }
 
+        LoggingService.shared.log("UsageRefreshCoordinator: using standard fetch path")
         return try await apiService.fetchUsageData()
     }
 
