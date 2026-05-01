@@ -28,11 +28,9 @@ struct HorseRaceSettingsView: View {
     @State private var isJoining: Bool = false
     @State private var joinFeedback: FeedbackState = .none
 
-    // MARK: - Current race (refreshed after create/join/leave)
+    // MARK: - Race entries (refreshed after create/join/leave)
 
-    @State private var currentRaceURL: String? = RaceSettings.shared.raceURL
-    @State private var currentRaceName: String? = RaceSettings.shared.raceName
-    @State private var urlCopied: Bool = false
+    @State private var raceEntries: [RaceEntry] = RaceSettings.shared.raceEntries
 
     // MARK: - Body
 
@@ -49,7 +47,7 @@ struct HorseRaceSettingsView: View {
                 identitySection
                 createSection
                 joinSection
-                if currentRaceURL != nil { currentRaceSection }
+                racesSection
                 timersSection
             }
             .padding()
@@ -195,55 +193,54 @@ struct HorseRaceSettingsView: View {
         !joinRaceURL.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
-    // MARK: - Current Race
+    // MARK: - Races
 
-    private var currentRaceSection: some View {
+    private var racesSection: some View {
         SettingsSectionCard(
-            title: "Current Race",
-            subtitle: nil
+            title: "Races",
+            subtitle: raceEntries.isEmpty ? "Join or create a race to get started." : nil
         ) {
-            VStack(alignment: .leading, spacing: 10) {
-                if let name = currentRaceName {
-                    HStack {
-                        Text("Race")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(name)
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(raceEntries) { entry in
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.name ?? URL(string: entry.url)?.lastPathComponent ?? entry.url)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
 
-                if let url = currentRaceURL {
-                    HStack(spacing: 6) {
-                        Text(url)
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
+                            Text(entry.url)
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
 
                         Spacer()
 
-                        Button(urlCopied ? "Copied!" : "Copy") {
+                        Button {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(url, forType: .string)
-                            urlCopied = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                urlCopied = false
-                            }
+                            NSPasteboard.general.setString(entry.url, forType: .string)
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
                         }
                         .buttonStyle(.plain)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.accentColor)
-                    }
-                }
+                        .help("Copy URL")
 
-                Button("Leave Race") {
-                    leaveRace()
+                        Button {
+                            leaveRace(entry: entry)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Leave race")
+                    }
+                    .padding(.vertical, 2)
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 11))
-                .foregroundColor(.red)
             }
         }
     }
@@ -336,7 +333,7 @@ struct HorseRaceSettingsView: View {
             NSPasteboard.general.setString(url, forType: .string)
             createFeedback = .success("Race created. URL copied to clipboard.")
             createRaceName = ""
-            refreshCurrentRace()
+            refreshEntries()
             try? await Task.sleep(for: .seconds(3))
             if case .success = createFeedback { createFeedback = .none }
         } catch {
@@ -376,12 +373,12 @@ struct HorseRaceSettingsView: View {
             decoder.dateDecodingStrategy = .iso8601
             let standings = try? decoder.decode(RaceStandings.self, from: data)
 
-            RaceSettings.shared.raceURL = urlString
-            RaceSettings.shared.raceName = standings?.name
+            let entry = RaceEntry(url: urlString, name: standings?.name)
+            RaceSettings.shared.addRaceEntry(entry)
             RaceService.shared.restart()
             joinFeedback = .success("Joined race.")
             joinRaceURL = ""
-            refreshCurrentRace()
+            refreshEntries()
             try? await Task.sleep(for: .seconds(3))
             if case .success = joinFeedback { joinFeedback = .none }
         } catch {
@@ -393,11 +390,10 @@ struct HorseRaceSettingsView: View {
 
     // MARK: - Actions: Leave
 
-    private func leaveRace() {
-        RaceSettings.shared.raceURL = nil
-        RaceSettings.shared.raceName = nil
-        RaceService.shared.stop()
-        refreshCurrentRace()
+    private func leaveRace(entry: RaceEntry) {
+        RaceSettings.shared.removeRaceEntry(id: entry.id)
+        RaceService.shared.restart()
+        refreshEntries()
     }
 
     // MARK: - Actions: Name (rename via identity system)
@@ -411,8 +407,8 @@ struct HorseRaceSettingsView: View {
         let old = previousName
         guard trimmed != old else { return }
 
-        guard let urlString = RaceSettings.shared.raceURL,
-              let baseURL = URL(string: urlString) else {
+        let entries = RaceSettings.shared.raceEntries
+        guard !entries.isEmpty else {
             RaceSettings.shared.participantName = trimmed
             previousName = trimmed
             return
@@ -425,34 +421,30 @@ struct HorseRaceSettingsView: View {
         ]
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
 
-        var request = URLRequest(url: baseURL.appendingPathComponent("participant/rename"))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = body
-        request.timeoutInterval = 10
-
         Task {
-            do {
-                let (_, response) = try await URLSession.shared.data(for: request)
-                await MainActor.run {
-                    if let http = response as? HTTPURLResponse {
-                        if http.statusCode == 200 {
-                            RaceSettings.shared.participantName = trimmed
-                            previousName = trimmed
-                            nameError = nil
-                        } else if http.statusCode == 409 {
-                            nameError = "Name already taken"
-                            participantName = old
-                        } else {
-                            RaceSettings.shared.participantName = trimmed
-                            previousName = trimmed
-                        }
+            var anyConflict = false
+            for entry in entries {
+                guard let baseURL = URL(string: entry.url) else { continue }
+                var request = URLRequest(url: baseURL.appendingPathComponent("participant/rename"))
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = body
+                request.timeoutInterval = 10
+                do {
+                    let (_, response) = try await URLSession.shared.data(for: request)
+                    if let http = response as? HTTPURLResponse, http.statusCode == 409 {
+                        anyConflict = true
                     }
-                }
-            } catch {
-                await MainActor.run {
+                } catch { }
+            }
+            await MainActor.run {
+                if anyConflict {
+                    nameError = "Name already taken"
+                    participantName = old
+                } else {
                     RaceSettings.shared.participantName = trimmed
                     previousName = trimmed
+                    nameError = nil
                 }
             }
         }
@@ -460,9 +452,8 @@ struct HorseRaceSettingsView: View {
 
     // MARK: - Helpers
 
-    private func refreshCurrentRace() {
-        currentRaceURL = RaceSettings.shared.raceURL
-        currentRaceName = RaceSettings.shared.raceName
+    private func refreshEntries() {
+        raceEntries = RaceSettings.shared.raceEntries
     }
 }
 
