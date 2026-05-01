@@ -637,7 +637,7 @@ struct SmartUsageDashboard: View {
                 subtitle: isEnterprise ? nil : "menubar.5_hour_window".localized,
                 usedPercentage: usage.effectiveSessionPercentage,
                 showRemaining: showRemainingPercentage,
-                resetTime: usage.sessionResetTime,
+                resetTime: isEnterprise ? nil : usage.sessionResetTime,
                 periodDuration: isEnterprise ? nil : Constants.sessionWindow,
                 showTimeMarker: isEnterprise ? false : showTimeMarker,
                 showPaceMarker: isEnterprise ? false : showPaceMarker,
@@ -687,8 +687,8 @@ struct SmartUsageDashboard: View {
                 }
             }
 
-            // Extra usage (cost-based)
-            if let used = usage.costUsed, let limit = usage.costLimit, let currency = usage.costCurrency, limit > 0 {
+            // Extra usage (cost-based) — hidden for enterprise (shown as Monthly Spend instead)
+            if !isEnterprise, let used = usage.costUsed, let limit = usage.costLimit, let currency = usage.costCurrency, limit > 0 {
                 let usedPercentage = (used / limit) * 100.0
                 UsageRow(
                     title: "menubar.extra_usage".localized,

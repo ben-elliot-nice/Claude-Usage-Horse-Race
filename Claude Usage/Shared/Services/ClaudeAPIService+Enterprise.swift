@@ -41,8 +41,9 @@ extension ClaudeAPIService {
             )
         }
 
-        // utilization is 0.0–1.0 from the API; convert to 0–100 percentage
-        let utilization = (extraUsage["utilization"] as? Double ?? 0.0) * 100.0
+        // utilization is already a percentage (0–100) in the API response,
+        // e.g. 0.66 means 0.66% (not 66%). Do NOT multiply by 100.
+        let utilization = extraUsage["utilization"] as? Double ?? 0.0
         let usedCredits = extraUsage["used_credits"] as? Double ?? 0.0
         let monthlyLimit = extraUsage["monthly_limit"] as? Double ?? 0.0
         let currency = extraUsage["currency"] as? String ?? "USD"
