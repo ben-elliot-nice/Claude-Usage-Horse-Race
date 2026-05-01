@@ -64,17 +64,26 @@ def get_race_name(r: Redis, slug: str) -> str | None:
 
 def check_and_reset_epoch(r: Redis, slug: str) -> None:
     """
-    Lazy monthly reset. If the current epoch sentinel key is missing,
-    clear all participant usage data and create a new sentinel with TTL
-    expiring at 00:00 GMT on the 1st of next month.
+    Lazy monthly reset. Uses SET NX to atomically claim the reset so only one
+    caller performs the cleanup when the epoch sentinel is missing.
     The names hash is never touched.
     """
     now = datetime.now(timezone.utc)
     epoch_key = f"race:{slug}:epoch:{now.strftime('%Y-%m')}"
 
-    if r.exists(epoch_key):
-        return
+    if now.month == 12:
+        next_month = datetime(now.year + 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    else:
+        next_month = datetime(now.year, now.month + 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
+    ttl_seconds = max(1, int((next_month - now).total_seconds()))
+
+    # SET NX: only returns True if we actually created the key (we won the race)
+    claimed = r.set(epoch_key, "1", ex=ttl_seconds, nx=True)
+    if not claimed:
+        return  # Another process already reset, or no reset needed
+
+    # We claimed the sentinel — now clear participant usage data
     keys: list[bytes] = []
     cursor = 0
     while True:
@@ -84,14 +93,6 @@ def check_and_reset_epoch(r: Redis, slug: str) -> None:
             break
     if keys:
         r.delete(*keys)
-
-    if now.month == 12:
-        next_month = datetime(now.year + 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-    else:
-        next_month = datetime(now.year, now.month + 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-
-    ttl_seconds = max(1, int((next_month - now).total_seconds()))
-    r.set(epoch_key, "1", ex=ttl_seconds)
 
 
 def register_name(r: Redis, slug: str, name: str, client_id: str) -> str:
