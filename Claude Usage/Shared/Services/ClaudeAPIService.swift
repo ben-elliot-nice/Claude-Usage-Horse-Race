@@ -73,7 +73,8 @@ class ClaudeAPIService: APIServiceProtocol {
     /// Gets the best available authentication method with fallback support
     /// Priority: 1) claude.ai session → 2) saved CLI OAuth → 3) system Keychain CLI OAuth
     /// Note: Console API session is NOT used as fallback (it only provides billing data, not usage)
-    private func getAuthentication() throws -> AuthenticationType {
+    /// Internal so ClaudeAPIService+Enterprise.swift can call it.
+    func getAuthentication() throws -> AuthenticationType {
         guard let activeProfile = ProfileManager.shared.activeProfile else {
             LoggingService.shared.logError("ClaudeAPIService.getAuthentication: No active profile")
             throw AppError.sessionKeyNotFound()
