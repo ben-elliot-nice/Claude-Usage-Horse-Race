@@ -583,7 +583,7 @@ class ClaudeAPIService: APIServiceProtocol {
         }
     }
 
-    private func performRequest(endpoint: String, sessionKey: String) async throws -> Data {
+    func performRequest(endpoint: String, sessionKey: String) async throws -> Data {
         // Build URL safely
         let url = try URLBuilder(baseURL: baseURL)
             .appendingPath(endpoint)
