@@ -192,11 +192,14 @@ final class RaceService: ObservableObject {
     private func resolveCostData() -> (usedCents: Int, limitCents: Int)? {
         let profile = ProfileManager.shared.activeProfile
 
-        // Primary: enterprise utilization (authoritative % from extra_usage API block)
+        // Primary: enterprise monthly spend (dollars → cents conversion)
+        // costUsed/costLimit are dollar amounts from extra_usage; multiply by 100 for cents.
         if profile?.connectionType == .enterprise,
-           let usage = profile?.claudeUsage {
-            let basisPoints = Int(usage.effectiveSessionPercentage * 100)
-            return (usedCents: basisPoints, limitCents: 10000)
+           let usage = profile?.claudeUsage,
+           let costUsed = usage.costUsed,
+           let costLimit = usage.costLimit,
+           costLimit > 0 {
+            return (usedCents: Int(costUsed * 100), limitCents: Int(costLimit * 100))
         }
 
         // Fallback: console API credits
