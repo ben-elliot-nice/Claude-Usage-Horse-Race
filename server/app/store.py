@@ -174,6 +174,8 @@ def rename_participant(r: Redis, slug: str, old_name: str, new_name: str, client
     Atomically rename a participant using a Lua script.
     Returns: "ok" | "not_found" | "forbidden" | "conflict"
     """
+    if old_name == new_name:
+        return "ok"
     if not r.exists(f"race:{slug}:meta"):
         return "not_found"
     result = r.eval(_RENAME_SCRIPT, 1, slug, old_name, new_name, client_id)
