@@ -43,6 +43,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var refreshInterval: TimeInterval
     var autoStartSessionEnabled: Bool
     var checkOverageLimitEnabled: Bool
+    var connectionType: ConnectionType
 
     // MARK: - Notification Settings (Per-Profile)
     var notificationSettings: NotificationSettings
@@ -72,6 +73,7 @@ struct Profile: Codable, Identifiable, Equatable {
         refreshInterval: TimeInterval = 30.0,
         autoStartSessionEnabled: Bool = false,
         checkOverageLimitEnabled: Bool = true,
+        connectionType: ConnectionType = .claudeAI,
         notificationSettings: NotificationSettings = NotificationSettings(),
         isSelectedForDisplay: Bool = true,
         createdAt: Date = Date(),
@@ -94,6 +96,7 @@ struct Profile: Codable, Identifiable, Equatable {
         self.refreshInterval = refreshInterval
         self.autoStartSessionEnabled = autoStartSessionEnabled
         self.checkOverageLimitEnabled = checkOverageLimitEnabled
+        self.connectionType = connectionType
         self.notificationSettings = notificationSettings
         self.isSelectedForDisplay = isSelectedForDisplay
         self.createdAt = createdAt
@@ -123,6 +126,60 @@ struct Profile: Codable, Identifiable, Equatable {
 
     var hasAnyCredentials: Bool {
         hasClaudeAI || hasAPIConsole || cliCredentialsJSON != nil
+    }
+
+    // MARK: - Codable (custom decoder for backward-compatibility)
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case claudeSessionKey
+        case organizationId
+        case apiSessionKey
+        case apiOrganizationId
+        case apiSessionKeyExpiry
+        case cliCredentialsJSON
+        case hasCliAccount
+        case cliAccountSyncedAt
+        case oauthAccountJSON
+        case claudeUsage
+        case apiUsage
+        case iconConfig
+        case refreshInterval
+        case autoStartSessionEnabled
+        case checkOverageLimitEnabled
+        case connectionType
+        case notificationSettings
+        case isSelectedForDisplay
+        case createdAt
+        case lastUsedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        claudeSessionKey = try container.decodeIfPresent(String.self, forKey: .claudeSessionKey)
+        organizationId = try container.decodeIfPresent(String.self, forKey: .organizationId)
+        apiSessionKey = try container.decodeIfPresent(String.self, forKey: .apiSessionKey)
+        apiOrganizationId = try container.decodeIfPresent(String.self, forKey: .apiOrganizationId)
+        apiSessionKeyExpiry = try container.decodeIfPresent(Date.self, forKey: .apiSessionKeyExpiry)
+        cliCredentialsJSON = try container.decodeIfPresent(String.self, forKey: .cliCredentialsJSON)
+        hasCliAccount = try container.decode(Bool.self, forKey: .hasCliAccount)
+        cliAccountSyncedAt = try container.decodeIfPresent(Date.self, forKey: .cliAccountSyncedAt)
+        oauthAccountJSON = try container.decodeIfPresent(String.self, forKey: .oauthAccountJSON)
+        claudeUsage = try container.decodeIfPresent(ClaudeUsage.self, forKey: .claudeUsage)
+        apiUsage = try container.decodeIfPresent(APIUsage.self, forKey: .apiUsage)
+        iconConfig = try container.decode(MenuBarIconConfiguration.self, forKey: .iconConfig)
+        refreshInterval = try container.decode(TimeInterval.self, forKey: .refreshInterval)
+        autoStartSessionEnabled = try container.decode(Bool.self, forKey: .autoStartSessionEnabled)
+        checkOverageLimitEnabled = try container.decode(Bool.self, forKey: .checkOverageLimitEnabled)
+        // connectionType was added later — default to .claudeAI for pre-existing profiles
+        connectionType = try container.decodeIfPresent(ConnectionType.self, forKey: .connectionType) ?? .claudeAI
+        notificationSettings = try container.decode(NotificationSettings.self, forKey: .notificationSettings)
+        isSelectedForDisplay = try container.decode(Bool.self, forKey: .isSelectedForDisplay)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        lastUsedAt = try container.decode(Date.self, forKey: .lastUsedAt)
     }
 }
 

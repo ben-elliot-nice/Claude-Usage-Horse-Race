@@ -52,10 +52,24 @@ final class UsageRefreshCoordinator {
 
     // MARK: - Refresh Logic
 
+    /// Fetches usage data using the appropriate strategy for the active profile's connection type.
+    private func fetchUsageForActiveProfile() async throws -> ClaudeUsage {
+        let profile = await MainActor.run { ProfileManager.shared.activeProfile }
+
+        if profile?.connectionType == .enterprise,
+           let claudeService = apiService as? ClaudeAPIService,
+           let sessionKey = profile?.claudeSessionKey,
+           let orgId = profile?.organizationId {
+            return try await claudeService.fetchEnterpriseUsageData(sessionKey: sessionKey, organizationId: orgId)
+        }
+
+        return try await apiService.fetchUsageData()
+    }
+
     func refreshUsage() {
         Task {
             // Fetch usage and status in parallel
-            async let usageResult = apiService.fetchUsageData()
+            async let usageResult = fetchUsageForActiveProfile()
             async let statusResult = statusService.fetchStatus()
 
             do {
