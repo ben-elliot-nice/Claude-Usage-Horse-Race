@@ -43,6 +43,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var refreshInterval: TimeInterval
     var autoStartSessionEnabled: Bool
     var checkOverageLimitEnabled: Bool
+    var connectionType: ConnectionType
 
     // MARK: - Notification Settings (Per-Profile)
     var notificationSettings: NotificationSettings
@@ -72,6 +73,7 @@ struct Profile: Codable, Identifiable, Equatable {
         refreshInterval: TimeInterval = 30.0,
         autoStartSessionEnabled: Bool = false,
         checkOverageLimitEnabled: Bool = true,
+        connectionType: ConnectionType = .claudeAI,
         notificationSettings: NotificationSettings = NotificationSettings(),
         isSelectedForDisplay: Bool = true,
         createdAt: Date = Date(),
@@ -94,6 +96,7 @@ struct Profile: Codable, Identifiable, Equatable {
         self.refreshInterval = refreshInterval
         self.autoStartSessionEnabled = autoStartSessionEnabled
         self.checkOverageLimitEnabled = checkOverageLimitEnabled
+        self.connectionType = connectionType
         self.notificationSettings = notificationSettings
         self.isSelectedForDisplay = isSelectedForDisplay
         self.createdAt = createdAt
