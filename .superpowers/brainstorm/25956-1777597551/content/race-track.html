@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horse Race UI Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a1f;
+    color: #e0e0e0;
+    padding: 32px;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .label-above {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  /* Simulated macOS popover */
+  .popover {
+    width: 280px;
+    background: rgba(30,30,36,0.97);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    overflow: hidden;
+  }
+
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 0 12px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab.active {
+    color: #fff;
+    border-bottom-color: #fff;
+  }
+
+  .race-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 6px;
+  }
+  .race-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .race-refresh {
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+  }
+
+  /* ── VARIANT A: Single-lane, emoji on a dashed track ── */
+  .track-area-a {
+    padding: 4px 14px 12px;
+  }
+  .track-row-a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .track-name-a {
+    font-size: 10px;
+    font-weight: 500;
+    color: #aaa;
+    width: 38px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .track-name-a.you {
+    color: #fff;
+    font-weight: 700;
+  }
+  .track-line-a {
+    flex: 1;
+    height: 14px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .track-dots {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 2px dashed rgba(255,255,255,0.1);
+  }
+  .finish-flag {
+    position: absolute;
+    right: -2px;
+    top: 50%;
+    transform: translateY(-60%);
+    font-size: 11px;
+  }
+  .horse-a {
+    position: absolute;
+    font-size: 16px;
+    transform: translateX(-50%);
+    cursor: default;
+    transition: left 0.4s ease;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+  }
+  .horse-a:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    font-family: -apple-system, sans-serif;
+  }
+  .track-row-a.you-row .track-line-a .track-dots {
+    border-top-color: rgba(255,255,255,0.18);
+  }
+  .stale-badge {
+    font-size: 10px;
+    color: #666;
+  }
+
+  /* ── VARIANT B: Wider spaced, position numbers ── */
+  .track-area-b {
+    padding: 4px 14px 12px;
+  }
+  .track-row-b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .pos-num {
+    font-size: 9px;
+    font-weight: 700;
+    color: #555;
+    width: 12px;
+    flex-shrink: 0;
+  }
+  .track-name-b {
+    font-size: 10px;
+    font-weight: 500;
+    color: #aaa;
+    width: 34px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-name-b.you { color: #fff; font-weight: 700; }
+  .track-line-b {
+    flex: 1;
+    height: 18px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .track-bg-b {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 3px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 2px;
+  }
+  .finish-b {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-60%);
+    font-size: 10px;
+  }
+  .horse-b {
+    position: absolute;
+    font-size: 18px;
+    transform: translateX(-50%);
+    cursor: default;
+    line-height: 1;
+    transition: left 0.4s ease;
+  }
+  .horse-b:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,20,24,0.95);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff;
+    font-size: 10px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* Footer */
+  .race-footer {
+    padding: 6px 14px 10px;
+    font-size: 9px;
+    color: #555;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ccc;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Not-configured state */
+  .not-configured {
+    padding: 24px 14px;
+    text-align: center;
+  }
+  .not-configured .emoji { font-size: 28px; margin-bottom: 10px; }
+  .not-configured p { font-size: 11px; color: #666; line-height: 1.5; margin-bottom: 12px; }
+  .not-configured button {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  /* Clickable option border */
+  .variant-wrap {
+    cursor: pointer;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .variant-wrap:hover { border-color: rgba(255,255,255,0.2); }
+  .variant-wrap.selected { border-color: #6ee7b7; }
+  .variant-wrap.selected .label-above { color: #6ee7b7; }
+</style>
+</head>
+<body>
+
+<!-- VARIANT A -->
+<div>
+  <div class="label-above">Option A — Dashed track, tight layout</div>
+  <div class="variant-wrap" id="varA" onclick="selectVariant('varA','a')">
+    <div class="popover">
+      <div class="tab-bar">
+        <div class="tab">Usage</div>
+        <div class="tab active">🏇 Race</div>
+      </div>
+
+      <div class="race-header">
+        <span class="race-title">NICE-TEAM</span>
+        <span class="race-refresh">↺</span>
+      </div>
+
+      <div class="track-area-a">
+        <!-- 1st: Alice 61% -->
+        <div class="track-row-a">
+          <div class="track-name-a">Alice</div>
+          <div class="track-line-a">
+            <div class="track-dots"></div>
+            <span class="horse-a" style="left:61%" data-tip="Alice · $615 · 61% · 2m ago">🐴</span>
+            <span class="finish-flag">🏁</span>
+          </div>
+        </div>
+        <!-- 2nd: Ben 42% (you) -->
+        <div class="track-row-a you-row">
+          <div class="track-name-a you">Ben</div>
+          <div class="track-line-a">
+            <div class="track-dots"></div>
+            <span class="horse-a" style="left:42%" data-tip="You · $420 · 42% · just now">🐴</span>
+            <span class="finish-flag">🏁</span>
+          </div>
+        </div>
+        <!-- 3rd: Carol 18% -->
+        <div class="track-row-a">
+          <div class="track-name-a">Carol</div>
+          <div class="track-line-a">
+            <div class="track-dots"></div>
+            <span class="horse-a" style="left:18%" data-tip="Carol · $180 · 18% · 4m ago">🐴</span>
+            <span class="finish-flag">🏁</span>
+          </div>
+        </div>
+        <!-- 4th: Dave 9% stale -->
+        <div class="track-row-a">
+          <div class="track-name-a" style="color:#555">Dave</div>
+          <div class="track-line-a">
+            <div class="track-dots"></div>
+            <span class="horse-a" style="left:9%;opacity:0.35;filter:grayscale(1)" data-tip="Dave · $90 · 9% · ⚠ 14m ago (stale)">🐴</span>
+            <span class="finish-flag" style="opacity:0.3">🏁</span>
+          </div>
+          <span class="stale-badge">⚠</span>
+        </div>
+      </div>
+
+      <div class="race-footer">Updated 12s ago · hover horses for details</div>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT B -->
+<div>
+  <div class="label-above">Option B — Solid track, position numbers</div>
+  <div class="variant-wrap" id="varB" onclick="selectVariant('varB','b')">
+    <div class="popover">
+      <div class="tab-bar">
+        <div class="tab">Usage</div>
+        <div class="tab active">🏇 Race</div>
+      </div>
+
+      <div class="race-header">
+        <span class="race-title">NICE-TEAM</span>
+        <span class="race-refresh">↺</span>
+      </div>
+
+      <div class="track-area-b">
+        <!-- 1st -->
+        <div class="track-row-b">
+          <div class="pos-num">1</div>
+          <div class="track-name-b">Alice</div>
+          <div class="track-line-b">
+            <div class="track-bg-b"></div>
+            <span class="horse-b" style="left:61%" data-tip="Alice · $615 · 61% · 2m ago">🐴</span>
+            <span class="finish-b">🏁</span>
+          </div>
+        </div>
+        <!-- 2nd (you) -->
+        <div class="track-row-b">
+          <div class="pos-num" style="color:#aaa">2</div>
+          <div class="track-name-b you">Ben</div>
+          <div class="track-line-b">
+            <div class="track-bg-b" style="background:rgba(255,255,255,0.13)"></div>
+            <span class="horse-b" style="left:42%" data-tip="You · $420 · 42% · just now">🐴</span>
+            <span class="finish-b">🏁</span>
+          </div>
+        </div>
+        <!-- 3rd -->
+        <div class="track-row-b">
+          <div class="pos-num">3</div>
+          <div class="track-name-b">Carol</div>
+          <div class="track-line-b">
+            <div class="track-bg-b"></div>
+            <span class="horse-b" style="left:18%" data-tip="Carol · $180 · 18% · 4m ago">🐴</span>
+            <span class="finish-b">🏁</span>
+          </div>
+        </div>
+        <!-- 4th stale -->
+        <div class="track-row-b">
+          <div class="pos-num">4</div>
+          <div class="track-name-b" style="color:#444">Dave</div>
+          <div class="track-line-b">
+            <div class="track-bg-b"></div>
+            <span class="horse-b" style="left:9%;opacity:0.3;filter:grayscale(1)" data-tip="Dave · $90 · 9% · ⚠ 14m ago (stale)">🐴</span>
+            <span class="finish-b" style="opacity:0.3">🏁</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-footer">Updated 12s ago · hover horses for details</div>
+    </div>
+  </div>
+</div>
+
+<!-- NOT CONFIGURED state -->
+<div>
+  <div class="label-above">Not-configured state (both variants)</div>
+  <div class="popover">
+    <div class="tab-bar">
+      <div class="tab">Usage</div>
+      <div class="tab active">🏇 Race</div>
+    </div>
+    <div class="not-configured">
+      <div class="emoji">🏇</div>
+      <p>No race configured.<br>Add a race URL in<br><strong>Settings → Horse Race</strong></p>
+      <button>Open Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectVariant(id, choice) {
+  document.querySelectorAll('.variant-wrap').forEach(el => el.classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  if (window.recordChoice) recordChoice(choice, id === 'varA' ? 'Option A – dashed track' : 'Option B – solid track with positions');
+}
+</script>
+</body>
+</html>

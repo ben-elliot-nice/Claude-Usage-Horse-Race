@@ -294,6 +294,8 @@ struct SettingsView: View {
                     SupportView()
                 case .mobileApp:
                     MobileAppView()
+                case .horseRace:
+                    HorseRaceSettingsView()
                 case .popover:
                     PopoverSettingsView()
                 case .debug:
@@ -538,6 +540,7 @@ enum SettingsSection: String, CaseIterable {
     case updates
     case support
     case mobileApp
+    case horseRace
     case popover
     case debug
     case about
@@ -558,6 +561,7 @@ enum SettingsSection: String, CaseIterable {
         case .updates: return "settings.updates".localized
         case .support: return "section.support_title".localized
         case .mobileApp: return "section.mobile_app_title".localized
+        case .horseRace: return "Horse Race"
         case .popover: return "section.popover_title".localized
         case .debug: return "section.debug_title".localized
         case .about: return "settings.about".localized
@@ -580,6 +584,7 @@ enum SettingsSection: String, CaseIterable {
         case .updates: return "arrow.down.circle.fill"
         case .support: return "heart.fill"
         case .mobileApp: return "iphone"
+        case .horseRace: return "flag.checkered"
         case .popover: return "rectangle.topthird.inset.filled"
         case .debug: return "ladybug.fill"
         case .about: return "info.circle.fill"
@@ -602,6 +607,7 @@ enum SettingsSection: String, CaseIterable {
         case .updates: return "settings.updates.description".localized
         case .support: return "section.support_desc".localized
         case .mobileApp: return "section.mobile_app_desc".localized
+        case .horseRace: return "Race your team to the spend cap"
         case .popover: return "section.popover_desc".localized
         case .debug: return "section.debug_desc".localized
         case .about: return "settings.about.description".localized

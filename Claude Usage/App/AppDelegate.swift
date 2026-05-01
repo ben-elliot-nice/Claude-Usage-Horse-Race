@@ -45,6 +45,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Start 24-hour heartbeat ping to track active app usage
         HeartbeatService.shared.start()
 
+        // Start horse race service if configured
+        RaceService.shared.start()
+
         if !shouldShowSetupWizard() {
             // Initialize menu bar with active profile
             menuBarManager?.setup()
