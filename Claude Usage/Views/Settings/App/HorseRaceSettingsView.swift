@@ -7,6 +7,8 @@ struct HorseRaceSettingsView: View {
     @State private var participantName: String = RaceSettings.shared.participantName
     @State private var pushInterval: Double = RaceSettings.shared.pushInterval
     @State private var pollInterval: Double = RaceSettings.shared.pollInterval
+    @State private var nameError: String? = nil
+    @State private var previousName: String = RaceSettings.shared.participantName
 
     var body: some View {
         ScrollView {
@@ -55,15 +57,23 @@ struct HorseRaceSettingsView: View {
                     title: "Your Name",
                     subtitle: "How you appear on the race track."
                 ) {
-                    TextField("e.g. Ben", text: $participantName)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(size: 12))
-                        .onSubmit {
-                            RaceSettings.shared.participantName = participantName
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("e.g. Ben", text: $participantName)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12))
+                            .onSubmit {
+                                saveName()
+                            }
+
+                        if let error = nameError {
+                            Text(error)
+                                .font(.system(size: 10))
+                                .foregroundColor(.red)
                         }
+                    }
                 }
-                .onChange(of: participantName) { _, newValue in
-                    RaceSettings.shared.participantName = newValue
+                .onChange(of: participantName) { _, _ in
+                    nameError = nil
                 }
 
                 // Intervals
@@ -118,5 +128,61 @@ struct HorseRaceSettingsView: View {
         let trimmed = raceURL.trimmingCharacters(in: .whitespaces)
         RaceSettings.shared.raceURL = trimmed.isEmpty ? nil : trimmed
         RaceService.shared.restart()
+    }
+
+    private func saveName() {
+        let trimmed = participantName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            participantName = previousName
+            return
+        }
+        let old = previousName
+        guard trimmed != old else { return }
+
+        guard let urlString = RaceSettings.shared.raceURL,
+              let baseURL = URL(string: urlString) else {
+            RaceSettings.shared.participantName = trimmed
+            previousName = trimmed
+            return
+        }
+
+        let payload: [String: Any] = [
+            "id": RaceSettings.shared.participantID,
+            "old_name": old,
+            "new_name": trimmed,
+        ]
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
+
+        var request = URLRequest(url: baseURL.appendingPathComponent("participant/rename"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        request.timeoutInterval = 10
+
+        Task {
+            do {
+                let (_, response) = try await URLSession.shared.data(for: request)
+                await MainActor.run {
+                    if let http = response as? HTTPURLResponse {
+                        if http.statusCode == 200 {
+                            RaceSettings.shared.participantName = trimmed
+                            previousName = trimmed
+                            nameError = nil
+                        } else if http.statusCode == 409 {
+                            nameError = "Name already taken"
+                            participantName = old
+                        } else {
+                            RaceSettings.shared.participantName = trimmed
+                            previousName = trimmed
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    RaceSettings.shared.participantName = trimmed
+                    previousName = trimmed
+                }
+            }
+        }
     }
 }

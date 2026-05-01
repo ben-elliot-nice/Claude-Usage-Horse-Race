@@ -11,7 +11,33 @@ class CreateRaceResponse(BaseModel):
     name: str
 
 
+class RegisterRequest(BaseModel):
+    id: str
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_no_colon(cls, v: str) -> str:
+        if ":" in v:
+            raise ValueError("name may not contain ':'")
+        return v
+
+
+class RenameRequest(BaseModel):
+    id: str
+    old_name: str
+    new_name: str
+
+    @field_validator("old_name", "new_name")
+    @classmethod
+    def name_no_colon(cls, v: str) -> str:
+        if ":" in v:
+            raise ValueError("name may not contain ':'")
+        return v
+
+
 class ParticipantPayload(BaseModel):
+    id: str
     name: str
     cost_used_cents: int
     cost_limit_cents: int

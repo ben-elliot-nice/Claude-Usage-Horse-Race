@@ -37,6 +37,7 @@ final class RaceService: ObservableObject {
         schedulePollTimer()
         Task { await push() }
         Task { await poll() }
+        Task { await register() }
     }
 
     func stop() {
@@ -55,6 +56,38 @@ final class RaceService: ObservableObject {
 
     func refresh() {
         Task { await poll() }
+    }
+
+    // MARK: - Registration
+
+    func register() async {
+        guard let urlString = RaceSettings.shared.raceURL,
+              let baseURL = URL(string: urlString) else { return }
+
+        let payload: [String: Any] = [
+            "id": RaceSettings.shared.participantID,
+            "name": RaceSettings.shared.participantName,
+        ]
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
+
+        let endpoint = baseURL.appendingPathComponent("register")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        request.timeoutInterval = 10
+
+        do {
+            let (_, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return }
+            if http.statusCode == 409 {
+                lastError = "Name taken — choose a different name in Settings"
+            } else if http.statusCode != 200 {
+                lastError = "Registration failed: HTTP \(http.statusCode)"
+            }
+        } catch {
+            // Registration failure is non-fatal — will retry on next start()
+        }
     }
 
     // MARK: - Timers
@@ -88,6 +121,7 @@ final class RaceService: ObservableObject {
         guard let (usedCents, limitCents) = resolveCostData() else { return }
 
         let payload: [String: Any] = [
+            "id": RaceSettings.shared.participantID,
             "name": RaceSettings.shared.participantName,
             "cost_used_cents": usedCents,
             "cost_limit_cents": limitCents,
@@ -105,8 +139,14 @@ final class RaceService: ObservableObject {
 
         do {
             let (_, response) = try await session.data(for: request)
-            if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-                lastError = "Push failed: HTTP \(http.statusCode)"
+            if let http = response as? HTTPURLResponse {
+                if http.statusCode == 403 {
+                    lastError = "Name conflict — update your name in Settings"
+                    pushTimer?.invalidate()
+                    pushTimer = nil
+                } else if http.statusCode != 200 {
+                    lastError = "Push failed: HTTP \(http.statusCode)"
+                }
             }
         } catch {
             lastError = "Push error: \(error.localizedDescription)"
@@ -140,22 +180,30 @@ final class RaceService: ObservableObject {
 
     // MARK: - Cost Data Resolution
 
-    /// Primary: APIUsage.currentSpendCents / (currentSpendCents + prepaidCreditsCents)
-    /// Fallback: ClaudeUsage.costUsed / costLimit
+    /// Enterprise accounts report utilization via ClaudeUsage.effectiveSessionPercentage
+    /// (the `utilization` field from the extra_usage API block — already a percentage, 0–100).
+    /// This is the authoritative race metric — use it directly rather than deriving from
+    /// cost amounts, which can diverge from utilization.
+    ///
+    /// We encode it as basis points out of 10000 so the server computes the correct
+    /// percentage: e.g. 42.3% → cost_used=4230, cost_limit=10000.
+    ///
+    /// Fallback: console APIUsage credits (non-enterprise accounts).
     private func resolveCostData() -> (usedCents: Int, limitCents: Int)? {
         let profile = ProfileManager.shared.activeProfile
 
+        // Primary: enterprise utilization (authoritative % from extra_usage API block)
+        if profile?.connectionType == .enterprise,
+           let usage = profile?.claudeUsage {
+            let basisPoints = Int(usage.effectiveSessionPercentage * 100)
+            return (usedCents: basisPoints, limitCents: 10000)
+        }
+
+        // Fallback: console API credits
         if let api = profile?.apiUsage {
             let used = api.currentSpendCents
             let limit = api.currentSpendCents + api.prepaidCreditsCents
             if limit > 0 { return (used, limit) }
-        }
-
-        if let usage = profile?.claudeUsage,
-           let costUsed = usage.costUsed,
-           let costLimit = usage.costLimit,
-           costLimit > 0 {
-            return (Int(costUsed), Int(costLimit))
         }
 
         return nil

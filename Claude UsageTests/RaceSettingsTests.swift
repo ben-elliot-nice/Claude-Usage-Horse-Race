@@ -7,7 +7,7 @@ final class RaceSettingsTests: XCTestCase {
         super.setUp()
         // Clear all race keys before each test
         let keys = ["raceEnabled", "raceURL", "raceParticipantName",
-                    "racePushInterval", "racePollInterval"]
+                    "racePushInterval", "racePollInterval", "raceParticipantID"]
         keys.forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
@@ -47,5 +47,13 @@ final class RaceSettingsTests: XCTestCase {
     func testRaceURLNilOnEmptyString() {
         RaceSettings.shared.raceURL = ""
         XCTAssertNil(RaceSettings.shared.raceURL)
+    }
+
+    func testParticipantID_generatedOnce() {
+        UserDefaults.standard.removeObject(forKey: "raceParticipantID")
+        let id1 = RaceSettings.shared.participantID
+        let id2 = RaceSettings.shared.participantID
+        XCTAssertNotNil(UUID(uuidString: id1))
+        XCTAssertEqual(id1, id2)
     }
 }
