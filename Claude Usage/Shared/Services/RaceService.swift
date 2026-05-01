@@ -16,6 +16,8 @@ final class RaceService: ObservableObject {
 
     // MARK: - Private
 
+    private static let iso8601Formatter = ISO8601DateFormatter()
+
     private var pushTimer: Timer?
     private var pollTimer: Timer?
     private let session = URLSession.shared
@@ -33,6 +35,7 @@ final class RaceService: ObservableObject {
               RaceSettings.shared.raceURL != nil else { return }
         schedulePushTimer()
         schedulePollTimer()
+        Task { await push() }
         Task { await poll() }
     }
 
@@ -59,17 +62,21 @@ final class RaceService: ObservableObject {
     private func schedulePushTimer() {
         pushTimer?.invalidate()
         let interval = RaceSettings.shared.pushInterval
-        pushTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             Task { await self?.push() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        pushTimer = timer
     }
 
     private func schedulePollTimer() {
         pollTimer?.invalidate()
         let interval = RaceSettings.shared.pollInterval
-        pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             Task { await self?.poll() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        pollTimer = timer
     }
 
     // MARK: - Push
@@ -84,7 +91,7 @@ final class RaceService: ObservableObject {
             "name": RaceSettings.shared.participantName,
             "cost_used_cents": usedCents,
             "cost_limit_cents": limitCents,
-            "updated_at": ISO8601DateFormatter().string(from: Date())
+            "updated_at": Self.iso8601Formatter.string(from: Date())
         ]
 
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
