@@ -6,23 +6,11 @@ import Foundation
 extension ClaudeAPIService {
 
     /// Fetches usage data for an enterprise claude.ai account.
-    /// Reuses the existing getAuthentication() + fetchOrganizationId() path
-    /// so credential storage/keychain handling is identical to the standard flow.
-    func fetchEnterpriseUsageData() async throws -> ClaudeUsage {
-        let auth = try getAuthentication()
-
-        guard case .claudeAISession(let sessionKey) = auth else {
-            throw AppError(
-                code: .sessionKeyNotFound,
-                message: "Enterprise account requires a claude.ai session key",
-                isRecoverable: true,
-                recoverySuggestion: "Set up your Enterprise Account credentials in Settings"
-            )
-        }
-
-        let orgId = try await fetchOrganizationId(sessionKey: sessionKey)
+    /// Reads credentials from ProfileStore (Keychain) — the same place the
+    /// Enterprise wizard saves them — bypassing the CLI OAuth fallback chain.
+    func fetchEnterpriseUsageData(sessionKey: String, organizationId: String) async throws -> ClaudeUsage {
         let data = try await performRequest(
-            endpoint: "/organizations/\(orgId)/usage",
+            endpoint: "/organizations/\(organizationId)/usage",
             sessionKey: sessionKey
         )
         return try parseEnterpriseResponse(data)
