@@ -617,60 +617,69 @@ struct SmartUsageDashboard: View {
         SharedDataStore.shared.loadPopoverTimeDisplay()
     }
 
+    private var isEnterprise: Bool {
+        if profileManager.displayMode == .multi {
+            return false
+        }
+        return profileManager.activeProfile?.connectionType == .enterprise
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Primary: Session Usage
+            // Primary: Session Usage (or Monthly Spend for enterprise)
             UsageRow(
-                title: "menubar.session_usage".localized,
-                subtitle: "menubar.5_hour_window".localized,
+                title: isEnterprise ? "Monthly Spend" : "menubar.session_usage".localized,
+                subtitle: isEnterprise ? nil : "menubar.5_hour_window".localized,
                 usedPercentage: usage.effectiveSessionPercentage,
                 showRemaining: showRemainingPercentage,
                 resetTime: usage.sessionResetTime,
-                periodDuration: Constants.sessionWindow,
-                showTimeMarker: showTimeMarker,
-                showPaceMarker: showPaceMarker,
-                usePaceColoring: usePaceColoring,
+                periodDuration: isEnterprise ? nil : Constants.sessionWindow,
+                showTimeMarker: isEnterprise ? false : showTimeMarker,
+                showPaceMarker: isEnterprise ? false : showPaceMarker,
+                usePaceColoring: isEnterprise ? false : usePaceColoring,
                 timeDisplay: timeDisplay,
                 isPeakHighlighted: isPeakHours
             )
 
-            // All Models (Weekly)
-            UsageRow(
-                title: "menubar.all_models".localized,
-                tag: "menubar.weekly".localized,
-                subtitle: nil,
-                usedPercentage: usage.weeklyPercentage,
-                showRemaining: showRemainingPercentage,
-                resetTime: usage.weeklyResetTime,
-                periodDuration: Constants.weeklyWindow,
-                showTimeMarker: showTimeMarker,
-                showPaceMarker: showPaceMarker,
-                usePaceColoring: usePaceColoring,
-                timeDisplay: timeDisplay
-            )
-
-            if usage.opusWeeklyTokensUsed > 0 {
+            if !isEnterprise {
+                // All Models (Weekly)
                 UsageRow(
-                    title: "menubar.opus_usage".localized,
+                    title: "menubar.all_models".localized,
                     tag: "menubar.weekly".localized,
                     subtitle: nil,
-                    usedPercentage: usage.opusWeeklyPercentage,
+                    usedPercentage: usage.weeklyPercentage,
                     showRemaining: showRemainingPercentage,
-                    resetTime: nil,
-                    periodDuration: nil
-                )
-            }
-
-            if usage.sonnetWeeklyTokensUsed > 0 {
-                UsageRow(
-                    title: "menubar.sonnet_usage".localized,
-                    subtitle: nil,
-                    usedPercentage: usage.sonnetWeeklyPercentage,
-                    showRemaining: showRemainingPercentage,
-                    resetTime: usage.sonnetWeeklyResetTime,
-                    periodDuration: nil,
+                    resetTime: usage.weeklyResetTime,
+                    periodDuration: Constants.weeklyWindow,
+                    showTimeMarker: showTimeMarker,
+                    showPaceMarker: showPaceMarker,
+                    usePaceColoring: usePaceColoring,
                     timeDisplay: timeDisplay
                 )
+
+                if usage.opusWeeklyTokensUsed > 0 {
+                    UsageRow(
+                        title: "menubar.opus_usage".localized,
+                        tag: "menubar.weekly".localized,
+                        subtitle: nil,
+                        usedPercentage: usage.opusWeeklyPercentage,
+                        showRemaining: showRemainingPercentage,
+                        resetTime: nil,
+                        periodDuration: nil
+                    )
+                }
+
+                if usage.sonnetWeeklyTokensUsed > 0 {
+                    UsageRow(
+                        title: "menubar.sonnet_usage".localized,
+                        subtitle: nil,
+                        usedPercentage: usage.sonnetWeeklyPercentage,
+                        showRemaining: showRemainingPercentage,
+                        resetTime: usage.sonnetWeeklyResetTime,
+                        periodDuration: nil,
+                        timeDisplay: timeDisplay
+                    )
+                }
             }
 
             // Extra usage (cost-based)
