@@ -6,6 +6,7 @@ import SwiftUI
 struct RaceTabView: View {
     @ObservedObject private var raceService = RaceService.shared
     let onOpenSettings: () -> Void
+    @State private var showDetail = false
 
     var body: some View {
         Group {
@@ -86,6 +87,19 @@ struct RaceTabView: View {
 
                 Spacer()
 
+                // Toggle between track and detail view
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        showDetail.toggle()
+                    }
+                } label: {
+                    Image(systemName: showDetail ? "flag.checkered" : "list.bullet")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(showDetail ? "Show track" : "Show details")
+
                 Button {
                     raceService.refresh()
                 } label: {
@@ -99,18 +113,58 @@ struct RaceTabView: View {
             .padding(.top, 8)
             .padding(.bottom, 6)
 
-            // Track lanes
+            // Track lanes / detail list
             if let participants = raceService.standings?.participants, !participants.isEmpty {
-                VStack(spacing: 8) {
-                    ForEach(participants) { participant in
-                        HorseTrackRow(
-                            participant: participant,
-                            isYou: participant.name == RaceSettings.shared.participantName
-                        )
+                if showDetail {
+                    // Detail list
+                    VStack(spacing: 2) {
+                        ForEach(participants) { participant in
+                            HStack(spacing: 8) {
+                                Text(participant.name)
+                                    .font(.system(size: 11, weight: participant.name == RaceSettings.shared.participantName ? .bold : .medium))
+                                    .foregroundColor(participant.isStale ? .secondary.opacity(0.4) : .primary)
+                                    .frame(width: 52, alignment: .leading)
+                                    .lineLimit(1)
+
+                                Text(participant.formattedCostUsed)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(participant.isStale ? .secondary.opacity(0.4) : .primary)
+                                    .frame(width: 48, alignment: .trailing)
+
+                                Text("\(Int(participant.percentUsed))%")
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    .foregroundColor(participant.isStale ? .secondary.opacity(0.4) : .adaptiveGreen)
+                                    .frame(width: 36, alignment: .trailing)
+
+                                Spacer()
+
+                                Text(participant.updatedAgoString)
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary.opacity(participant.isStale ? 0.4 : 0.7))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 4)
+                            .background(
+                                participant.name == RaceSettings.shared.participantName
+                                    ? Color.primary.opacity(0.04)
+                                    : Color.clear
+                            )
+                        }
                     }
+                    .padding(.bottom, 6)
+                } else {
+                    // Track view (existing)
+                    VStack(spacing: 8) {
+                        ForEach(participants) { participant in
+                            HorseTrackRow(
+                                participant: participant,
+                                isYou: participant.name == RaceSettings.shared.participantName
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 8)
             } else {
                 Text("No participants yet.")
                     .font(.system(size: 11))
@@ -122,7 +176,7 @@ struct RaceTabView: View {
             // Footer
             if let pollDate = raceService.lastPollDate {
                 Divider().padding(.horizontal, 16)
-                Text("Updated \(relativeTime(from: pollDate)) · hover for details")
+                Text("Updated \(relativeTime(from: pollDate))")
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.7))
                     .padding(.vertical, 5)
