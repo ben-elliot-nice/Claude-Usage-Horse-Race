@@ -268,6 +268,8 @@ struct SettingsView: View {
                     APIBillingView()
                 case .cliAccount:
                     CLIAccountView()
+                case .enterprise:
+                    EnterpriseCredentialsView()
 
                 // Profile Settings
                 case .appearance:
@@ -525,6 +527,7 @@ enum SettingsSection: String, CaseIterable {
     case claudeAI
     case apiConsole
     case cliAccount
+    case enterprise
 
     // Profile Settings
     case appearance
@@ -550,6 +553,7 @@ enum SettingsSection: String, CaseIterable {
         case .claudeAI: return "section.claudeai_title".localized
         case .apiConsole: return "section.api_console_title".localized
         case .cliAccount: return "section.cli_account_title".localized
+        case .enterprise: return "Enterprise Account"
         case .appearance: return "section.appearance_title".localized
         case .general: return "section.general_title".localized
         case .history: return "section.history_title".localized
@@ -573,6 +577,7 @@ enum SettingsSection: String, CaseIterable {
         case .claudeAI: return "key.fill"
         case .apiConsole: return "dollarsign.circle.fill"
         case .cliAccount: return "terminal.fill"
+        case .enterprise: return "building.2.fill"
         case .appearance: return "paintbrush.fill"
         case .general: return "gearshape.fill"
         case .history: return "chart.bar.xaxis"
@@ -596,6 +601,7 @@ enum SettingsSection: String, CaseIterable {
         case .claudeAI: return "section.claudeai_desc".localized
         case .apiConsole: return "section.api_console_desc".localized
         case .cliAccount: return "section.cli_account_desc".localized
+        case .enterprise: return "NiCE Enterprise monthly spend"
         case .appearance: return "section.appearance_desc".localized
         case .general: return "section.general_desc".localized
         case .history: return "section.history_desc".localized
@@ -625,7 +631,7 @@ enum SettingsSection: String, CaseIterable {
 
     var isCredential: Bool {
         switch self {
-        case .claudeAI, .apiConsole, .cliAccount:
+        case .claudeAI, .apiConsole, .cliAccount, .enterprise:
             return true
         default:
             return false
@@ -737,6 +743,19 @@ struct ProfileCredentialCardsRow: View {
                     title: "CLI Account",
                     isConnected: profileManager.activeProfile?.hasCliAccount ?? false,
                     isSelected: selectedSection == .cliAccount
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Enterprise Card
+            Button {
+                selectedSection = .enterprise
+            } label: {
+                CredentialMiniCard(
+                    icon: "building.2.fill",
+                    title: "Enterprise Account",
+                    isConnected: profileManager.activeProfile?.connectionType == .enterprise,
+                    isSelected: selectedSection == .enterprise
                 )
             }
             .buttonStyle(.plain)
